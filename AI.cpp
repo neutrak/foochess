@@ -1,5 +1,6 @@
 #include "AI.h"
 #include "util.h"
+#include "Board.h"
 
 AI::AI(Connection* conn) : BaseAI(conn) {}
 
@@ -23,42 +24,12 @@ void AI::init()
 //Return true to end your turn, return false to ask the server for updated information.
 bool AI::run()
 {
+  //put the relevant data in a slightly more sane structure
+  //to get constant time lookups for some things that may otherwise be O(n^2)
+  Board *b=new Board(pieces);
+  
   // Print out the current board state
-  cout<<"+---+---+---+---+---+---+---+---+"<<endl;
-  for(size_t rank=8; rank>0; rank--)
-  {
-    cout<<"|";
-    for(size_t file=1; file<=8; file++)
-    {
-      bool found = false;
-      // Loops through all of the pieces
-      for(size_t p=0; !found && p<pieces.size(); p++)
-      {
-        // determines if that piece is at the current rank and file
-        if(pieces[p].rank() == rank && pieces[p].file() == file)
-        {
-          found = true;
-          // Checks if the piece is black
-          if(pieces[p].owner() == 1)
-          {
-            cout<<"*";
-          }
-          else
-          {
-            cout<<" ";
-          }
-          // prints the piece's type
-          cout<<(char)pieces[p].type()<<" ";
-        }
-      }
-      if(!found)
-      {
-        cout<<"   ";
-      }
-      cout<<"|";
-    }
-    cout<<endl<<"+---+---+---+---+---+---+---+---+"<<endl;
-  }
+  b->output_board();
 
   // Looks through information about the players
   for(size_t p=0; p<players.size(); p++)
@@ -77,6 +48,10 @@ bool AI::run()
   {
     cout<<"Last Move Was: "<<endl<<moves[0]<<endl;
   }
+  
+  //handle memory properly
+  delete b;
+  
   // select a random piece and move it to a random position on the board.  Attempts to promote to queen if a promotion happens
   pieces[rand()%pieces.size()].move(rand()%8+1, rand()%8+1, int('Q'));
   return true;
