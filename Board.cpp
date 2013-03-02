@@ -4,8 +4,11 @@
 
 //constructor
 //makes internal structures based off of the information we're provided with
-Board::Board(vector<Piece> pieces)
+Board::Board(vector<Piece> pieces, Board *parent)
 {
+  //set the parent we were given (for root node this should be NULL)
+  p=parent;
+  
   //first, NULL out the board to start with
   int file;
   for(file=0; file<width; file++)
@@ -32,6 +35,7 @@ Board::Board(vector<Piece> pieces)
       new_piece->rank=pieces[i].rank();
       new_piece->hasMoved=pieces[i].hasMoved();
       new_piece->type=pieces[i].type();
+      new_piece->owner=pieces[i].owner();
       
       //the -1 is to switch 1-indexing to 0-indexing
       state[((rank-1)*width)+(file-1)]=new_piece;
@@ -59,10 +63,10 @@ Board::~Board()
 void Board::output_board()
 {
   // Print out the current board state
-  cout<<"+---+---+---+---+---+---+---+---+"<<endl;
+  cout<<"   +---+---+---+---+---+---+---+---+"<<endl;
   for(size_t rank=8; rank>0; rank--)
   {
-    cout<<"|";
+    cout<<"R"<<rank<<" |";
     for(size_t file=1; file<=8; file++)
     {
       _Piece *p=get_element(file,rank);
@@ -87,7 +91,7 @@ void Board::output_board()
       }
       cout<<"|";
     }
-    cout<<endl<<"+---+---+---+---+---+---+---+---+"<<endl;
+    cout<<endl<<"   +---+---+---+---+---+---+---+---+"<<endl;
   }
 }
 
@@ -110,4 +114,91 @@ _Piece *Board::get_element(int file, int rank)
   //if the location given was out of bounds, there can't be a piece there
   return NULL;
 }
+
+//returns memory for a move structure for a piece
+//(remember to free this later)
+_Move *Board::make_move(_Piece *p, int to_file, int to_rank)
+{
+  _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
+  //connection is not something we're dealing with here
+  new_move->_c=NULL;
+  //I'm not sure what the id is for in a move, so ignore it for now
+  new_move->id=0;
+  new_move->fromFile=p->file;
+  new_move->fromRank=p->rank;
+  new_move->toFile=to_file;
+  new_move->toRank=to_rank;
+  //for the moment anything we want to promote would be to a queen
+  new_move->promoteType='Q';
+  
+  return new_move;
+}
+
+//a vector of random moves that can be done the piece in question
+vector<_Move*> Board::legal_moves(Piece p)
+{
+  //first, map onto the internal data structure
+  _Piece *piece=get_element(p.file(),p.rank());
+  
+  //allocate the data we'll be returning
+  vector<_Move*> valid_moves;
+  
+  switch(piece->type)
+  {
+    //pawn
+    case 'P':
+      //make a new scope, because I want some scope-specific variables
+      //(the jump table shouldn't care)
+      {
+        int direction_coefficient=0;
+        
+        printf("legal_moves debug 0, got a pawn at file=%i rank=%i\n", piece->file, piece->rank);
+        
+        //the legal moves for a pawn depend on what color it is, so check that
+        if(piece->owner==1)
+        {
+          direction_coefficient=-1;
+        }
+        else
+        {
+          direction_coefficient=1;
+        }
+        
+        //if we can move forward one, add that to the legal moves
+        if(get_element(piece->file,piece->rank+direction_coefficient)==NULL){
+          valid_moves.push_back(make_move(piece,piece->file,piece->rank+direction_coefficient));
+        }
+        //if there is someone to attack on a diagonal, add that to the legal moves
+        //if we're still on the starting line and can move two ahead, add that to the legal moves
+      }
+      break;
+    //rook
+    case 'R':
+      //add any movement left, right, up, or down
+      //from 1 to the number of tiles away the nearest other piece is in that direction
+      //for an enemy piece, include that tile, for an owned piece, don't
+      break;
+    //knight
+    case 'N':
+      //add any of the 4 possible points, so long as none of our own pieces are already there
+      break;
+    //bishop
+    case 'B':
+      //diagonals, account for pieces in the way the same way rook does
+      break;
+    //queen
+    case 'Q':
+      //diagonals and cardinal directions
+      //(just total of legal moves for rook and for bishop)
+      break;
+    //king
+    case 'K':
+      //one space away in any direction, providing we're not putting ourselves in check, etc.
+      //special case of castling?
+      break;
+  }
+  
+  return valid_moves;
+}
+
 
