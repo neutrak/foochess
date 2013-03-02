@@ -9,13 +9,13 @@ Board::Board(vector<Piece> pieces, Board *parent)
   //set the parent we were given (for root node this should be NULL)
   p=parent;
   
-  //first, NULL out the board to start with
-  int file;
-  for(file=0; file<width; file++)
+  //first, NULL out the board
+  for(int file=0; file<width; file++)
   {
-    int rank;
-    for(rank=0; rank<height; rank++)
+    for(int rank=0; rank<height; rank++)
     {
+      //as of right now, no pieces on the board have been checked for valid moves
+      have_checked[(rank*width)+file]=false;
       state[(rank*width)+file]=NULL;
     }
   }
@@ -102,6 +102,42 @@ void Board::output_board()
   cout<<endl;
 }
 
+//remember we checked this piece for moves
+//so we don't have to again
+void Board::set_checked(int file, int rank)
+{
+  //the people who wrote the API 1-index for some crazy reason
+  //so this maps to proper 0-indexing
+  file-=1;
+  rank-=1;
+  
+  //if the given location is within the board's bounds
+  if(file>=0 && file<width && rank>=0 && rank<height)
+  {
+    have_checked[(rank*width)+(file)]=true;
+  }
+}
+
+//determine whether we need to check the piece
+//returns true if we've already checked it; otherwise false
+bool Board::checked(int file, int rank)
+{
+  //the people who wrote the API 1-index for some crazy reason
+  //so this maps to proper 0-indexing
+  file-=1;
+  rank-=1;
+  
+  //if the given location is within the board's bounds
+  if(file>=0 && file<width && rank>=0 && rank<height)
+  {
+    //return the value of have_checked at that point
+    return have_checked[(rank*width)+(file)];
+  }
+  
+  //if the location given was out of bounds, there can't be a piece there
+  return false;
+}
+
 
 //returns the piece at a given location
 _Piece *Board::get_element(int file, int rank)
@@ -145,6 +181,23 @@ _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
   new_move->promoteType='Q';
   
   return new_move;
+}
+
+//a transformation to get to the next direction
+//returns 0 when there are none left
+int Board::next_direction(int direction)
+{
+    switch(direction)
+    {
+      case -1:
+        return 1;
+        break;
+      case 1:
+        //falls through; end condition
+      default:
+        return 0;
+        break;
+    }
 }
 
 vector<_Move*> Board::pawn_moves(_Piece *piece)
@@ -220,17 +273,7 @@ vector<_Move*> Board::rook_moves(_Piece *piece)
       valid_moves.push_back(make_move(piece, piece->file, rank));
     }
     
-    switch(direction)
-    {
-      case -1:
-        direction=1;
-        break;
-      case 1:
-        //falls through; end condition
-      default:
-        direction=0;
-        break;
-    }
+    direction=next_direction(direction); 
   }
   
   //same thing we did for rank, just do it for file
@@ -254,17 +297,7 @@ vector<_Move*> Board::rook_moves(_Piece *piece)
       valid_moves.push_back(make_move(piece, file, piece->rank));
     }
     
-    switch(direction)
-    {
-      case -1:
-        direction=1;
-        break;
-      case 1:
-        //falls through; end condition
-      default:
-        direction=0;
-        break;
-    }
+    direction=next_direction(direction); 
   }
   
   return valid_moves;
@@ -276,6 +309,50 @@ vector<_Move*> Board::knight_moves(_Piece *piece)
   
   //add any of the 8 possible points, so long as none of our own pieces are already there
   //(and the point isn't off the edge of the board)
+  
+  //x and y are offsets from the piece's file and rank, respectively
+  for(int x=1; x<=2; x++)
+  {
+    //y and x must never be equal in magnitude
+    //the below if-else ensures that
+    int y;
+    
+    if(x==1)
+    {
+      y=2;
+    }
+    else
+    {
+      y=1;
+    }
+    
+    //the direction in which we're checking
+    int x_direction=-1;
+    while(x_direction!=0)
+    {
+      x*=-1;
+      int y_direction=-1;
+      while(y_direction!=0)
+      {
+        y*=-1;
+        
+        //if this destination is in the bounds
+        if(((piece->file)+x>0) && ((piece->file)+x<=width) && ((piece->rank+y)>0) && ((piece->rank)+y<=height))
+        {
+          //if there's no one there or it's an enemy
+          if(get_element((piece->file+x), (piece->rank)+y)==NULL || get_element((piece->file)+x, (piece->rank)+y)->owner!=piece->owner)
+          {
+            //then it's a valid move
+            valid_moves.push_back(make_move(piece, (piece->file)+x, (piece->rank)+y));
+          }
+        }
+        
+        y_direction=next_direction(y_direction);
+      }
+      
+      x_direction=next_direction(x_direction);
+    }
+  }
   
   return valid_moves;
 }
@@ -322,31 +399,10 @@ vector<_Move*> Board::bishop_moves(_Piece *piece)
         r+=y_direction;
       }
       
-      switch(y_direction)
-      {
-        case -1:
-          y_direction=1;
-          break;
-        case 1:
-          //falls through; end condition
-        default:
-          y_direction=0;
-          break;
-      }
+      y_direction=next_direction(y_direction);
     }
     
-    
-    switch(x_direction)
-    {
-      case -1:
-        x_direction=1;
-        break;
-      case 1:
-        //falls through; end condition
-      default:
-        x_direction=0;
-        break;
-    }
+    x_direction=next_direction(x_direction);
   }
   
   return valid_moves;

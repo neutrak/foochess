@@ -69,24 +69,49 @@ bool AI::run()
   
   vector<_Move*> valid_moves;
   int rand_index;
+  
+  //a running count of the number of pieces we've tried to check
+  //when it gets through all of them, give up
+  int checked_pieces=0;
+  
   //while there are no legal moves for the selected piece
   while(valid_moves.empty())
   {
+    if(checked_pieces==owned_pieces.size())
+    {
+      break;
+    }
+    
     //of the owned pieces, select one at random
     rand_index=rand()%(owned_pieces.size());
-    valid_moves=b->legal_moves(owned_pieces[rand_index]);
+    
+    //if we haven't already checked this piece
+    if(!(b->checked(owned_pieces[rand_index].file(), owned_pieces[rand_index].rank())))
+    {
+      valid_moves=b->legal_moves(owned_pieces[rand_index]);
+      checked_pieces++;
+      cout<<"AI::run() debug -1, checked_pieces="<<checked_pieces<<endl;
+    }
   }
   
-  //make a random move of the legal moves generated earlier
-  int rand_move_index=rand()%(valid_moves.size());
-  owned_pieces[rand_index].move(valid_moves[rand_move_index]->toFile, valid_moves[rand_move_index]->toRank, valid_moves[rand_move_index]->promoteType);
-  
-  //handle memory properly
-  for(size_t i=0; i<valid_moves.size(); i++)
+  //if we checked all pieces and none had valid moves
+  if(valid_moves.empty())
   {
-    free(valid_moves[i]);
+    cout<<"AI::run() debug 0, checkmate!?"<<endl;
   }
-  delete b;
+  else
+  {
+    //make a random move of the legal moves generated earlier
+    int rand_move_index=rand()%(valid_moves.size());
+    owned_pieces[rand_index].move(valid_moves[rand_move_index]->toFile, valid_moves[rand_move_index]->toRank, valid_moves[rand_move_index]->promoteType);
+    
+    //handle memory properly
+    for(size_t i=0; i<valid_moves.size(); i++)
+    {
+      free(valid_moves[i]);
+    }
+    delete b;
+  }
   
   return true;
 }
