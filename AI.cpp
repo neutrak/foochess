@@ -77,9 +77,6 @@ bool AI::run()
     valid_moves=b->legal_moves(owned_pieces[rand_index]);
   }
   
-  // select a random piece and move it to a random position on the board.  Attempts to promote to queen if a promotion happens
-//  pieces[rand()%pieces.size()].move(rand()%8+1, rand()%8+1, int('Q'));
-  
   //make a random move of the legal moves generated earlier
   int rand_move_index=rand()%(valid_moves.size());
   owned_pieces[rand_index].move(valid_moves[rand_move_index]->toFile, valid_moves[rand_move_index]->toRank, valid_moves[rand_move_index]->promoteType);

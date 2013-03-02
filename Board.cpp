@@ -140,8 +140,10 @@ vector<_Move*> Board::legal_moves(Piece p)
   //first, map onto the internal data structure
   _Piece *piece=get_element(p.file(),p.rank());
   
-  //allocate the data we'll be returning
+  //allocate the data structure we'll be returning
   vector<_Move*> valid_moves;
+  
+  printf("legal_moves debug 0, got a %c at file=%i rank=%i\n", piece->type, piece->file, piece->rank);
   
   switch(piece->type)
   {
@@ -151,9 +153,6 @@ vector<_Move*> Board::legal_moves(Piece p)
       //(the jump table shouldn't care)
       {
         int direction_coefficient=0;
-        
-        printf("legal_moves debug 0, got a pawn at file=%i rank=%i\n", piece->file, piece->rank);
-        
         //the legal moves for a pawn depend on what color it is, so check that
         if(piece->owner==1)
         {
@@ -165,18 +164,107 @@ vector<_Move*> Board::legal_moves(Piece p)
         }
         
         //if we can move forward one, add that to the legal moves
-        if(get_element(piece->file,piece->rank+direction_coefficient)==NULL){
-          valid_moves.push_back(make_move(piece,piece->file,piece->rank+direction_coefficient));
+        if(get_element(piece->file, piece->rank+direction_coefficient)==NULL)
+        {
+          valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
         }
-        //if there is someone to attack on a diagonal, add that to the legal moves
+        
+        //if there is someone to attack on either or both diagonals, add that to the legal moves
+        _Piece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
+        if(to_attack!=NULL && (to_attack->owner!=piece->owner))
+        {
+          valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+        }
+        to_attack=get_element((piece->file)-1, piece->rank+direction_coefficient);
+        if(to_attack!=NULL && (to_attack->owner!=piece->owner))
+        {
+          valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+        }
+        
         //if we're still on the starting line and can move two ahead, add that to the legal moves
+        if((piece->owner==1 && piece->rank==7) || (piece->owner==0 && piece->rank==2))
+        {
+          if(get_element(piece->file, piece->rank+direction_coefficient)==NULL && get_element(piece->file, piece->rank+(2*direction_coefficient))==NULL)
+          {
+            valid_moves.push_back(make_move(piece, piece->file, piece->rank+(2*direction_coefficient)));
+          }
+        }
       }
       break;
     //rook
     case 'R':
-      //add any movement left, right, up, or down
-      //from 1 to the number of tiles away the nearest other piece is in that direction
-      //for an enemy piece, include that tile, for an owned piece, don't
+      {
+        //add any movement left, right, up, or down
+        //from 1 to the number of tiles away the nearest other piece is in that direction
+        //for an enemy piece, include that tile, for an owned piece, don't
+        
+        //save some code, re-use the rank checking for up and down
+        int direction=-1;
+        while(direction!=0)
+        {
+          //check a rank
+          size_t rank;
+          //the +direction in initialization is because no-op is not a valid move
+          for(rank=piece->rank+direction; ((rank>0 && rank<=height) && (get_element(piece->file, rank)==NULL)); rank+=direction)
+          {
+            //any move until an obstacle or board end is valid
+            valid_moves.push_back(make_move(piece, piece->file, rank));
+          }
+          
+          //if there was an enemy piece in the way
+          if((rank>0 && rank<=height) && (get_element(piece->file, rank)->owner!=(piece->owner)))
+          {
+            //attacking the enemy is a valid move
+            valid_moves.push_back(make_move(piece, piece->file, rank));
+          }
+          
+          switch(direction)
+          {
+            case -1:
+              direction=1;
+              break;
+            case 1:
+              //falls through; end condition
+            default:
+              direction=0;
+              break;
+          }
+        }
+        
+        //same thing we did for rank, just do it for file
+        //TODO: try to compress this and the rank code into one loop, may need to use a bitmask for that...
+        direction=-1;
+        while(direction!=0)
+        {
+          //check a file
+          size_t file;
+          //the +direction in initialization is because no-op is not a valid move
+          for(file=piece->file+direction; ((file>0 && file<=width) && (get_element(file, piece->rank)==NULL)); file+=direction)
+          {
+            //any move until an obstacle or board end is valid
+            valid_moves.push_back(make_move(piece, file, piece->rank));
+          }
+          
+          //if there was an enemy piece in the way
+          if((file>0 && file<=width) && (get_element(file, piece->rank)->owner!=(piece->owner)))
+          {
+            //attacking the enemy is a valid move
+            valid_moves.push_back(make_move(piece, file, piece->rank));
+          }
+          
+          switch(direction)
+          {
+            case -1:
+              direction=1;
+              break;
+            case 1:
+              //falls through; end condition
+            default:
+              direction=0;
+              break;
+          }
+        }
+      }
       break;
     //knight
     case 'N':
