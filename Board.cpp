@@ -93,6 +93,13 @@ void Board::output_board()
     }
     cout<<endl<<"   +---+---+---+---+---+---+---+---+"<<endl;
   }
+  
+  cout<<"   |";
+  for(size_t file=1; file<=8; file++)
+  {
+    cout<<"F"<<file<<" |";
+  }
+  cout<<endl;
 }
 
 
@@ -120,6 +127,12 @@ _Piece *Board::get_element(int file, int rank)
 _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
 {
   _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
+  if(new_move==NULL)
+  {
+    fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
+    exit(1);
+  }
+  
   //connection is not something we're dealing with here
   new_move->_c=NULL;
   //I'm not sure what the id is for in a move, so ignore it for now
@@ -133,6 +146,263 @@ _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
   
   return new_move;
 }
+
+vector<_Move*> Board::pawn_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  int direction_coefficient=0;
+  //the legal moves for a pawn depend on what color it is, so check that
+  if(piece->owner==1)
+  {
+    direction_coefficient=-1;
+  }
+  else
+  {
+    direction_coefficient=1;
+  }
+  
+  //if we can move forward one, add that to the legal moves
+  if(get_element(piece->file, piece->rank+direction_coefficient)==NULL)
+  {
+    valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
+  }
+  
+  //if there is someone to attack on either or both diagonals, add that to the legal moves
+  _Piece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
+  if(to_attack!=NULL && (to_attack->owner!=piece->owner))
+  {
+    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+  }
+  to_attack=get_element((piece->file)-1, piece->rank+direction_coefficient);
+  if(to_attack!=NULL && (to_attack->owner!=piece->owner))
+  {
+    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+  }
+  
+  //if we're still on the starting line and can move two ahead, add that to the legal moves
+  if((piece->owner==1 && piece->rank==7) || (piece->owner==0 && piece->rank==2))
+  {
+    if(get_element(piece->file, piece->rank+direction_coefficient)==NULL && get_element(piece->file, piece->rank+(2*direction_coefficient))==NULL)
+    {
+      valid_moves.push_back(make_move(piece, piece->file, piece->rank+(2*direction_coefficient)));
+    }
+  }
+  
+  return valid_moves;
+}
+
+vector<_Move*> Board::rook_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  //add any movement left, right, up, or down
+  //from 1 to the number of tiles away the nearest other piece is in that direction
+  //for an enemy piece, include that tile, for an owned piece, don't
+  
+  //save some code, re-use the rank checking for up and down
+  int direction=-1;
+  while(direction!=0)
+  {
+    //check a rank
+    int rank;
+    //the +direction in initialization is because no-op is not a valid move
+    for(rank=piece->rank+direction; ((rank>0 && rank<=height) && (get_element(piece->file, rank)==NULL)); rank+=direction)
+    {
+      //any move until an obstacle or board end is valid
+      valid_moves.push_back(make_move(piece, piece->file, rank));
+    }
+    
+    //if there was an enemy piece in the way
+    if((rank>0 && rank<=height) && (get_element(piece->file, rank)->owner!=(piece->owner)))
+    {
+      //attacking the enemy is a valid move
+      valid_moves.push_back(make_move(piece, piece->file, rank));
+    }
+    
+    switch(direction)
+    {
+      case -1:
+        direction=1;
+        break;
+      case 1:
+        //falls through; end condition
+      default:
+        direction=0;
+        break;
+    }
+  }
+  
+  //same thing we did for rank, just do it for file
+  //TODO: try to compress this and the rank code into one loop, may need to use a bitmask for that...
+  direction=-1;
+  while(direction!=0)
+  {
+    //check a file
+    int file;
+    //the +direction in initialization is because no-op is not a valid move
+    for(file=piece->file+direction; ((file>0 && file<=width) && (get_element(file, piece->rank)==NULL)); file+=direction)
+    {
+      //any move until an obstacle or board end is valid
+      valid_moves.push_back(make_move(piece, file, piece->rank));
+    }
+    
+    //if there was an enemy piece in the way
+    if((file>0 && file<=width) && (get_element(file, piece->rank)->owner!=(piece->owner)))
+    {
+      //attacking the enemy is a valid move
+      valid_moves.push_back(make_move(piece, file, piece->rank));
+    }
+    
+    switch(direction)
+    {
+      case -1:
+        direction=1;
+        break;
+      case 1:
+        //falls through; end condition
+      default:
+        direction=0;
+        break;
+    }
+  }
+  
+  return valid_moves;
+}
+
+vector<_Move*> Board::knight_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  //add any of the 8 possible points, so long as none of our own pieces are already there
+  //(and the point isn't off the edge of the board)
+  
+  return valid_moves;
+}
+
+vector<_Move*> Board::bishop_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  //diagonals, account for pieces in the way the same way rook does
+  
+  int x_direction=-1;
+  while(x_direction!=0)
+  {
+    int y_direction=-1;
+    while(y_direction!=0)
+    {
+      //file
+      int f=(piece->file)+x_direction;
+      //rank
+      int r=(piece->rank)+y_direction;
+      while((f>0 && f<=width) && (r>0 && r<=height))
+      {
+        //there's nothing in the way in a given direction
+        if(get_element(f,r)==NULL)
+        {
+          valid_moves.push_back(make_move(piece, f, r));
+        }
+        //we hit something
+        else
+        {
+          //if we don't own it, attacking it is a valid move
+          if(get_element(f,r)->owner!=(piece->owner))
+          {
+            valid_moves.push_back(make_move(piece, f, r));
+          }
+          
+          //break the relevant loops, we're done with this direction
+          f=-1;
+          r=-1;
+        }
+        
+        //try the next diagonal coordinate
+        f+=x_direction;
+        r+=y_direction;
+      }
+      
+      switch(y_direction)
+      {
+        case -1:
+          y_direction=1;
+          break;
+        case 1:
+          //falls through; end condition
+        default:
+          y_direction=0;
+          break;
+      }
+    }
+    
+    
+    switch(x_direction)
+    {
+      case -1:
+        x_direction=1;
+        break;
+      case 1:
+        //falls through; end condition
+      default:
+        x_direction=0;
+        break;
+    }
+  }
+  
+  return valid_moves;
+}
+
+vector<_Move*> Board::queen_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  //diagonals and cardinal directions
+  //(just total of legal moves for rook and for bishop)
+  vector<_Move *> cardinal_moves=rook_moves(piece);
+  for(size_t i=0; i<cardinal_moves.size(); i++)
+  {
+    valid_moves.push_back(cardinal_moves[i]);
+  }
+  
+  vector<_Move *> diagonal_moves=bishop_moves(piece);
+  for(size_t i=0; i<diagonal_moves.size(); i++)
+  {
+    valid_moves.push_back(diagonal_moves[i]);
+  }
+  
+  return valid_moves;
+}
+
+vector<_Move*> Board::king_moves(_Piece *piece)
+{
+  vector<_Move *> valid_moves;
+  
+  //one space away in any direction, providing we're not putting ourselves in check, etc.
+  
+  //f for file
+  for(int f=(piece->file)-1; f<=(piece->file+1); f++)
+  {
+    //r for rank
+    for(int r=(piece->rank)-1; r<=(piece->rank)+1; r++)
+    {
+      //if this spot is on the board and
+      //this isn't the position the king is already in
+      if(((f>0 && f<=width) && (r>0 && r<=height)) && !(f==piece->file && r==piece->rank))
+      {
+        //if the space is empty or it's an enemy piece
+        if(get_element(f,r)==NULL || get_element(f,r)->owner!=piece->owner)
+        {
+          //it's a valid move to go to f,r
+          valid_moves.push_back(make_move(piece, f, r));
+        }
+      }
+    }
+  }
+  
+  //TODO: special case of castling?
+  return valid_moves;
+}
+
 
 //a vector of random moves that can be done the piece in question
 vector<_Move*> Board::legal_moves(Piece p)
@@ -149,140 +419,27 @@ vector<_Move*> Board::legal_moves(Piece p)
   {
     //pawn
     case 'P':
-      //make a new scope, because I want some scope-specific variables
-      //(the jump table shouldn't care)
-      {
-        int direction_coefficient=0;
-        //the legal moves for a pawn depend on what color it is, so check that
-        if(piece->owner==1)
-        {
-          direction_coefficient=-1;
-        }
-        else
-        {
-          direction_coefficient=1;
-        }
-        
-        //if we can move forward one, add that to the legal moves
-        if(get_element(piece->file, piece->rank+direction_coefficient)==NULL)
-        {
-          valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
-        }
-        
-        //if there is someone to attack on either or both diagonals, add that to the legal moves
-        _Piece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
-        if(to_attack!=NULL && (to_attack->owner!=piece->owner))
-        {
-          valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
-        }
-        to_attack=get_element((piece->file)-1, piece->rank+direction_coefficient);
-        if(to_attack!=NULL && (to_attack->owner!=piece->owner))
-        {
-          valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
-        }
-        
-        //if we're still on the starting line and can move two ahead, add that to the legal moves
-        if((piece->owner==1 && piece->rank==7) || (piece->owner==0 && piece->rank==2))
-        {
-          if(get_element(piece->file, piece->rank+direction_coefficient)==NULL && get_element(piece->file, piece->rank+(2*direction_coefficient))==NULL)
-          {
-            valid_moves.push_back(make_move(piece, piece->file, piece->rank+(2*direction_coefficient)));
-          }
-        }
-      }
+      valid_moves=pawn_moves(piece);
       break;
     //rook
     case 'R':
-      {
-        //add any movement left, right, up, or down
-        //from 1 to the number of tiles away the nearest other piece is in that direction
-        //for an enemy piece, include that tile, for an owned piece, don't
-        
-        //save some code, re-use the rank checking for up and down
-        int direction=-1;
-        while(direction!=0)
-        {
-          //check a rank
-          size_t rank;
-          //the +direction in initialization is because no-op is not a valid move
-          for(rank=piece->rank+direction; ((rank>0 && rank<=height) && (get_element(piece->file, rank)==NULL)); rank+=direction)
-          {
-            //any move until an obstacle or board end is valid
-            valid_moves.push_back(make_move(piece, piece->file, rank));
-          }
-          
-          //if there was an enemy piece in the way
-          if((rank>0 && rank<=height) && (get_element(piece->file, rank)->owner!=(piece->owner)))
-          {
-            //attacking the enemy is a valid move
-            valid_moves.push_back(make_move(piece, piece->file, rank));
-          }
-          
-          switch(direction)
-          {
-            case -1:
-              direction=1;
-              break;
-            case 1:
-              //falls through; end condition
-            default:
-              direction=0;
-              break;
-          }
-        }
-        
-        //same thing we did for rank, just do it for file
-        //TODO: try to compress this and the rank code into one loop, may need to use a bitmask for that...
-        direction=-1;
-        while(direction!=0)
-        {
-          //check a file
-          size_t file;
-          //the +direction in initialization is because no-op is not a valid move
-          for(file=piece->file+direction; ((file>0 && file<=width) && (get_element(file, piece->rank)==NULL)); file+=direction)
-          {
-            //any move until an obstacle or board end is valid
-            valid_moves.push_back(make_move(piece, file, piece->rank));
-          }
-          
-          //if there was an enemy piece in the way
-          if((file>0 && file<=width) && (get_element(file, piece->rank)->owner!=(piece->owner)))
-          {
-            //attacking the enemy is a valid move
-            valid_moves.push_back(make_move(piece, file, piece->rank));
-          }
-          
-          switch(direction)
-          {
-            case -1:
-              direction=1;
-              break;
-            case 1:
-              //falls through; end condition
-            default:
-              direction=0;
-              break;
-          }
-        }
-      }
+      valid_moves=rook_moves(piece);
       break;
     //knight
     case 'N':
-      //add any of the 4 possible points, so long as none of our own pieces are already there
+      valid_moves=knight_moves(piece);
       break;
     //bishop
     case 'B':
-      //diagonals, account for pieces in the way the same way rook does
+      valid_moves=bishop_moves(piece);
       break;
     //queen
     case 'Q':
-      //diagonals and cardinal directions
-      //(just total of legal moves for rook and for bishop)
+      valid_moves=queen_moves(piece);
       break;
     //king
     case 'K':
-      //one space away in any direction, providing we're not putting ourselves in check, etc.
-      //special case of castling?
+      valid_moves=king_moves(piece);
       break;
   }
   
