@@ -344,6 +344,10 @@ void Board::apply_move(_Move *move)
   //move the relevant piece
   state[((move->toRank-1)*width)+(move->toFile-1)]=state[((move->fromRank-1)*width)+(move->fromFile-1)];
   
+  //update that piece's file and rank information so it knows where it now is
+  get_element(move->toFile, move->toRank)->file=(move->toFile);
+  get_element(move->toFile, move->toRank)->rank=(move->toRank);
+  
   //there is now nothing where the piece previously was
   state[((move->fromRank-1)*width)+(move->fromFile-1)]=NULL;
 }
