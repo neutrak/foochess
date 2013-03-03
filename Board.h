@@ -21,11 +21,20 @@ public:
   //constructor, makes board internal structures based off of the data I'm given
   Board(vector<Piece> pieces, Board *parent);
   
+  //copy constructor
+  Board(Board *board);
+  
   //destructor, cleans up nicely
   ~Board();
   
+  //deal with other nodes in the structure
+  void remove_child(Board *board);
+  
   //display whatever the current state of the board is
   void output_board();
+  
+  //checks whether a given player is in check in the current board
+  bool in_check(int player_id);
   
   //remember we checked this piece for moves
   //so we don't have to again
@@ -42,6 +51,10 @@ public:
   //(remember to free this later)
   _Move *make_move(_Piece *p, int to_file, int to_rank);
   
+  //transforms the internal board to be
+  //what it should be after a given move is applied
+  void apply_move(_Move *move);
+  
   //a transformation to get to the next direction
   //returns 0 when there are none left
   int next_direction(int direction);
@@ -57,7 +70,7 @@ public:
   vector<_Move*> king_moves(_Piece *piece);
   
   //a vector of random moves that can be done by the piece in question
-  vector<_Move*> legal_moves(Piece p);
+  vector<_Move*> legal_moves(_Piece *piece);
 };
 
 #endif

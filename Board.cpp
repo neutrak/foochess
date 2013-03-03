@@ -29,6 +29,12 @@ Board::Board(vector<Piece> pieces, Board *parent)
     if(file>0 && file<=width && rank>0 && rank<=height)
     {
       _Piece *new_piece=(_Piece*)(malloc(sizeof(_Piece)));
+      if(new_piece==NULL)
+      {
+        fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
+        exit(1);
+      }
+      
       new_piece->_c=NULL;
       new_piece->id=pieces[i].id();
       new_piece->file=pieces[i].file();
@@ -39,6 +45,53 @@ Board::Board(vector<Piece> pieces, Board *parent)
       
       //the -1 is to switch 1-indexing to 0-indexing
       state[((rank-1)*width)+(file-1)]=new_piece;
+    }
+  }
+}
+
+//copy constructor
+Board::Board(Board *board)
+{
+  //this is the child of the board it was copied from
+  p=board;
+  
+  //and this is a child of that board
+  board->children.push_back(this);
+  
+  for(int file=0; file<width; file++)
+  {
+    for(int rank=0; rank<height; rank++)
+    {
+      //the +1 is to convert to 1-indexing
+      if(board->get_element(file+1, rank+1)!=NULL)
+      {
+        _Piece *new_piece=(_Piece*)(malloc(sizeof(_Piece)));
+        if(new_piece==NULL)
+        {
+          fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
+          exit(1);
+        }
+        _Piece *old_piece=board->get_element(file+1, rank+1);
+        
+        //make an exact copy of the relevant data
+        new_piece->_c=old_piece->_c;
+        new_piece->id=old_piece->id;
+        new_piece->file=old_piece->file;
+        new_piece->rank=old_piece->rank;
+        new_piece->hasMoved=old_piece->hasMoved;
+        new_piece->type=old_piece->type;
+        new_piece->owner=old_piece->owner;
+        
+        state[(rank*width)+(file)]=new_piece;
+      }
+      //there was no piece here, so NULL it out
+      else
+      {
+        state[(rank*width)+(file)]=NULL;
+      }
+      
+      //and of course nothing has yet been checked
+      have_checked[(rank*width)+file]=false;
     }
   }
 }
@@ -56,10 +109,29 @@ Board::~Board()
       }
     }
   }
+  
+  //and recurse to get all the children
+  for(size_t i=0; i<children.size(); i++)
+  {
+    delete children[i];
+  }
 }
 
+//deal with other nodes in the structure
+void Board::remove_child(Board *board)
+{
+  for(vector<Board*>::iterator i=children.begin(); i!=children.end(); i++)
+  {
+    if((*i)==board)
+    {
+      i=children.erase(i);
+    }
+  }
+}
+
+
 //Output the board
-//(no arguments since all relevant data is already stored in the BaseAI class)
+//(no arguments since all relevant data is already stored in the Board class)
 void Board::output_board()
 {
   // Print out the current board state
@@ -100,6 +172,75 @@ void Board::output_board()
     cout<<"F"<<file<<" |";
   }
   cout<<endl;
+}
+
+//checks whether a given player is in check in the current board
+bool Board::in_check(int player_id)
+{
+  //first, find the king belonging to this player
+  _Piece *king=NULL;
+  
+  //file
+  for(size_t f=1; f<=width; f++)
+  {
+    //rank
+    for(size_t r=1; r<=height; r++)
+    {
+      //if this is the given player's king
+      if(get_element(f,r)!=NULL && get_element(f,r)->owner==player_id && get_element(f,r)->type=='K')
+      {
+        king=get_element(f,r);
+      }
+    }
+  }
+  
+  //if we couldn't find the king
+  if(king==NULL)
+  {
+    //I don't know if it's in check but there are certainly some problems here
+    return true;
+  }
+  
+  bool king_in_check=false;
+  
+  //now that we know where the king is, see if any enemy can attack it
+  //file
+  for(size_t f=1; f<=width; f++)
+  {
+    //rank
+    for(size_t r=1; r<=height; r++)
+    {
+      //if this is an enemy of any kind
+      if(get_element(f,r)!=NULL && get_element(f,r)->owner!=player_id)
+      {
+        //generate its moves
+        _Piece *p=get_element(f,r);
+        vector<_Move*> enemy_moves=legal_moves(p);
+        
+        for(size_t m=0; m<enemy_moves.size(); m++)
+        {
+          //if it can attack us, then we are indeed in check
+          if(enemy_moves[m]->toFile==king->file && enemy_moves[m]->toRank==king->rank)
+          {
+            king_in_check=true;
+          }
+          
+          //free the RAM
+          free(enemy_moves[m]);
+        }
+        
+        //save some clock cycles
+        //break the loop after we find an attacking piece
+        if(king_in_check)
+        {
+          f=width+1;
+          r=height+1;
+        }
+      }
+    }
+  }
+  
+  return king_in_check;
 }
 
 //remember we checked this piece for moves
@@ -181,6 +322,29 @@ _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
   new_move->promoteType='Q';
   
   return new_move;
+}
+
+//transforms the internal board to be
+//what it should be after a given move is applied
+void Board::apply_move(_Move *move)
+{
+  printf("Board::apply_move() debug 0, attempting to move from (%i,%i) to (%i,%i)\n", move->fromFile, move->fromRank, move->toFile, move->toRank);
+  
+  //free any piece that would be "captured"
+  if(get_element(move->toFile, move->toRank)!=NULL)
+  {
+    _Piece *victim=get_element(move->toFile, move->toRank);
+    printf("Board::apply_move() debug 1, CAPTURING a %c at (%i,%i)\n", victim->type, victim->file, victim->rank);
+    free(victim);
+  }
+  
+  //NOTE: the -1 everywhere is because the API I was given 1-indexes and I try to be consistent with it where it's not impossible to do so
+  
+  //move the relevant piece
+  state[((move->toRank-1)*width)+(move->toFile-1)]=state[((move->fromRank-1)*width)+(move->fromFile-1)];
+  
+  //there is now nothing where the piece previously was
+  state[((move->fromRank-1)*width)+(move->fromFile-1)]=NULL;
 }
 
 //a transformation to get to the next direction
@@ -461,15 +625,12 @@ vector<_Move*> Board::king_moves(_Piece *piece)
 
 
 //a vector of random moves that can be done the piece in question
-vector<_Move*> Board::legal_moves(Piece p)
+vector<_Move*> Board::legal_moves(_Piece *piece)
 {
-  //first, map onto the internal data structure
-  _Piece *piece=get_element(p.file(),p.rank());
-  
   //allocate the data structure we'll be returning
   vector<_Move*> valid_moves;
   
-  printf("legal_moves debug 0, got a %c at file=%i rank=%i\n", piece->type, piece->file, piece->rank);
+//  printf("legal_moves debug 0, got a %c at file=%i rank=%i\n", piece->type, piece->file, piece->rank);
   
   switch(piece->type)
   {
