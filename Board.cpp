@@ -125,6 +125,9 @@ void Board::remove_child(Board *board)
     if((*i)==board)
     {
       i=children.erase(i);
+      
+      //the -- is so the ++ in the for loop kicks us back to the proper next element
+      i--;
     }
   }
 }
