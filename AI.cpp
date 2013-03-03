@@ -94,8 +94,6 @@ bool AI::run()
       //then generate some moves
       valid_moves=board->legal_moves(piece);
       
-      cout<<"AI::run() debug -2, current valid_moves size is "<<valid_moves.size()<<endl;
-      
       //go through all the moves, try making them (as nodes in a tree structure)
       for(vector<_Move*>::iterator i=valid_moves.begin(); i!=valid_moves.end(); i++)
       {
@@ -106,17 +104,11 @@ bool AI::run()
         //apply the given move
         post_move->apply_move(*i);
         
-/*
-        cout<<"AI::run() debug -1.5, post_move board state is..."<<endl;
-        post_move->output_board();
-        cout<<endl;
-*/
-        
         //if the result of this move is our owner being in check
         if(post_move->in_check(piece->owner))
         {
           //then it's not really a valid move
-          cout<<"Warn: We'll be in check after a move to ("<<(*i)->toFile<<","<<(*i)->toRank<<")"<<endl;
+//          cout<<"Warn: We'll be in check after a move to ("<<(*i)->toFile<<","<<(*i)->toRank<<")"<<endl;
           
           //free the associated memory
           free(*i);
@@ -127,26 +119,24 @@ bool AI::run()
           i--;
         }
       }
-      cout<<"AI::run() debug -1, current valid_moves size is "<<valid_moves.size()<<endl;
       
       //remember we've already checked this
       checked_pieces++;
       board->set_checked(piece->file, piece->rank);
-      cout<<"AI::run() debug 0, checked_pieces="<<checked_pieces<<endl;
     }
   }
   
   //if we checked all pieces and none had valid moves
   if(valid_moves.empty())
   {
-    cout<<"AI::run() debug 1, checkmate!?"<<endl;
+    cout<<"AI::run() debug 0, checkmate!?"<<endl;
   }
   else
   {
     //make a random move of the legal moves generated earlier
     int rand_move_index=rand()%(valid_moves.size());
     _Move* move=valid_moves[rand_move_index];
-    cout<<"AI::run() debug 2, ACTUALLY MOVING FROM ("<<move->fromFile<<","<<move->fromRank<<") to ("<<move->toFile<<","<<move->toRank<<")"<<endl;
+    cout<<"AI::run() debug 1, ACTUALLY MOVING FROM ("<<move->fromFile<<","<<move->fromRank<<") to ("<<move->toFile<<","<<move->toRank<<")"<<endl;
     owned_pieces[rand_index].move(move->toFile, move->toRank, move->promoteType);
   }
   

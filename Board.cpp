@@ -222,7 +222,6 @@ bool Board::in_check(int player_id)
           //if it can attack us, then we are indeed in check
           if((enemy_moves[m]->toFile)==(king->file) && (enemy_moves[m]->toRank)==(king->rank))
           {
-            printf("Board::in_check() debug 0, king is in check from %c at (%i,%i)\n", p->type, p->file, p->rank);
             king_in_check=true;
           }
           
@@ -329,13 +328,10 @@ _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
 //what it should be after a given move is applied
 void Board::apply_move(_Move *move)
 {
-  printf("Board::apply_move() debug 0, attempting to move from (%i,%i) to (%i,%i)\n", move->fromFile, move->fromRank, move->toFile, move->toRank);
-  
   //free any piece that would be "captured"
   if(get_element(move->toFile, move->toRank)!=NULL)
   {
     _Piece *victim=get_element(move->toFile, move->toRank);
-    printf("Board::apply_move() debug 1, CAPTURING a %c at (%i,%i)\n", victim->type, victim->file, victim->rank);
     free(victim);
   }
   
