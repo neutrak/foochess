@@ -106,6 +106,12 @@ bool AI::run()
         //apply the given move
         post_move->apply_move(*i);
         
+/*
+        cout<<"AI::run() debug -1.5, post_move board state is..."<<endl;
+        post_move->output_board();
+        cout<<endl;
+*/
+        
         //if the result of this move is our owner being in check
         if(post_move->in_check(piece->owner))
         {

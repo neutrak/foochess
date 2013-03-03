@@ -220,8 +220,9 @@ bool Board::in_check(int player_id)
         for(size_t m=0; m<enemy_moves.size(); m++)
         {
           //if it can attack us, then we are indeed in check
-          if(enemy_moves[m]->toFile==king->file && enemy_moves[m]->toRank==king->rank)
+          if((enemy_moves[m]->toFile)==(king->file) && (enemy_moves[m]->toRank)==(king->rank))
           {
+            printf("Board::in_check() debug 0, king is in check from %c at (%i,%i)\n", p->type, p->file, p->rank);
             king_in_check=true;
           }
           
