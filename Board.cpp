@@ -14,8 +14,6 @@ Board::Board(vector<Piece> pieces, Board *parent)
   {
     for(int rank=0; rank<height; rank++)
     {
-      //as of right now, no pieces on the board have been checked for valid moves
-      have_checked[(rank*width)+file]=false;
       state[(rank*width)+file]=NULL;
     }
   }
@@ -28,7 +26,7 @@ Board::Board(vector<Piece> pieces, Board *parent)
     //defensive: bounds checking in case we're passed bad data
     if(file>0 && file<=width && rank>0 && rank<=height)
     {
-      _Piece *new_piece=(_Piece*)(malloc(sizeof(_Piece)));
+      _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
       if(new_piece==NULL)
       {
         fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
@@ -43,10 +41,19 @@ Board::Board(vector<Piece> pieces, Board *parent)
       new_piece->type=pieces[i].type();
       new_piece->owner=pieces[i].owner();
       
+      //and of course nothing has yet been checked
+      new_piece->haveChecked=false;
+//      new_piece->movements=old_piece->movements;
+      new_piece->movements=0;
+      
       //the -1 is to switch 1-indexing to 0-indexing
       state[((rank-1)*width)+(file-1)]=new_piece;
     }
   }
+  
+  //check if we're in check (get it?)
+  white_check=in_check(0);
+  black_check=in_check(1);
 }
 
 //copy constructor
@@ -55,9 +62,6 @@ Board::Board(Board *board)
   //this is the child of the board it was copied from
   p=board;
   
-  //and this is a child of that board
-  board->children.push_back(this);
-  
   for(int file=0; file<width; file++)
   {
     for(int rank=0; rank<height; rank++)
@@ -65,13 +69,13 @@ Board::Board(Board *board)
       //the +1 is to convert to 1-indexing
       if(board->get_element(file+1, rank+1)!=NULL)
       {
-        _Piece *new_piece=(_Piece*)(malloc(sizeof(_Piece)));
+        _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
         if(new_piece==NULL)
         {
           fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
           exit(1);
         }
-        _Piece *old_piece=board->get_element(file+1, rank+1);
+        _SuperPiece *old_piece=board->get_element(file+1, rank+1);
         
         //make an exact copy of the relevant data
         new_piece->_c=old_piece->_c;
@@ -82,6 +86,10 @@ Board::Board(Board *board)
         new_piece->type=old_piece->type;
         new_piece->owner=old_piece->owner;
         
+        //and of course nothing has yet been checked
+        new_piece->haveChecked=false;
+        new_piece->movements=old_piece->movements;
+        
         state[(rank*width)+(file)]=new_piece;
       }
       //there was no piece here, so NULL it out
@@ -89,11 +97,43 @@ Board::Board(Board *board)
       {
         state[(rank*width)+(file)]=NULL;
       }
-      
-      //and of course nothing has yet been checked
-      have_checked[(rank*width)+file]=false;
     }
   }
+  
+  //check if we're in check (get it?)
+  white_check=in_check(0);
+  black_check=in_check(1);
+}
+
+//equality check (just checks type, owner, position of pieces, not history or anything)
+bool Board::equals(Board *board)
+{
+  for(int f=1; f<=8; f++)
+  {
+    for(int r=1; r<=8; r++)
+    {
+      //if one board has a null here but the other doesn't
+      if(((board->get_element(f,r)!=NULL) && (get_element(f,r)==NULL)) || ((board->get_element(f,r)==NULL) && (get_element(f,r)!=NULL)))
+      {
+        //then the boards are not equal
+        return false;
+      }
+      else if(get_element(f,r)!=NULL)
+      {
+        _SuperPiece *internal=get_element(f,r);
+        _SuperPiece *external=board->get_element(f,r);
+        //if the owner or type don't match the boards aren't equal
+        //(position is implicitly assured because of the loops)
+        if(internal->owner!=external->owner || internal->type!=external->type)
+        {
+          return false;
+        }
+      }
+    }
+  }
+  
+  //if we got through everything above and didn't return then the boards are equal
+  return true;
 }
 
 //destructor
@@ -118,6 +158,11 @@ Board::~Board()
 }
 
 //deal with other nodes in the structure
+void Board::add_child(Board *board)
+{
+  children.push_back(board);
+}
+
 void Board::remove_child(Board *board)
 {
   for(vector<Board*>::iterator i=children.begin(); i!=children.end(); i++)
@@ -144,7 +189,7 @@ void Board::output_board()
     cout<<"R"<<rank<<" |";
     for(size_t file=1; file<=8; file++)
     {
-      _Piece *p=get_element(file,rank);
+      _SuperPiece *p=get_element(file,rank);
       //if there is something on the board at this position
       if(p!=NULL)
       {
@@ -181,7 +226,7 @@ void Board::output_board()
 bool Board::in_check(int player_id)
 {
   //first, find the king belonging to this player
-  _Piece *king=NULL;
+  _SuperPiece *king=NULL;
   
   //file
   for(size_t f=1; f<=width; f++)
@@ -217,7 +262,7 @@ bool Board::in_check(int player_id)
       if(get_element(f,r)!=NULL && get_element(f,r)->owner!=player_id)
       {
         //generate its moves
-        _Piece *p=get_element(f,r);
+        _SuperPiece *p=get_element(f,r);
         vector<_Move*> enemy_moves=legal_moves(p);
         
         for(size_t m=0; m<enemy_moves.size(); m++)
@@ -246,45 +291,8 @@ bool Board::in_check(int player_id)
   return king_in_check;
 }
 
-//remember we checked this piece for moves
-//so we don't have to again
-void Board::set_checked(int file, int rank)
-{
-  //the people who wrote the API 1-index for some crazy reason
-  //so this maps to proper 0-indexing
-  file-=1;
-  rank-=1;
-  
-  //if the given location is within the board's bounds
-  if(file>=0 && file<width && rank>=0 && rank<height)
-  {
-    have_checked[(rank*width)+(file)]=true;
-  }
-}
-
-//determine whether we need to check the piece
-//returns true if we've already checked it; otherwise false
-bool Board::checked(int file, int rank)
-{
-  //the people who wrote the API 1-index for some crazy reason
-  //so this maps to proper 0-indexing
-  file-=1;
-  rank-=1;
-  
-  //if the given location is within the board's bounds
-  if(file>=0 && file<width && rank>=0 && rank<height)
-  {
-    //return the value of have_checked at that point
-    return have_checked[(rank*width)+(file)];
-  }
-  
-  //if the location given was out of bounds, there can't be a piece there
-  return false;
-}
-
-
 //returns the piece at a given location
-_Piece *Board::get_element(int file, int rank)
+_SuperPiece *Board::get_element(int file, int rank)
 {
   //the people who wrote the API 1-index for some crazy reason
   //so this maps to proper 0-indexing
@@ -304,7 +312,7 @@ _Piece *Board::get_element(int file, int rank)
 
 //returns memory for a move structure for a piece
 //(remember to free this later)
-_Move *Board::make_move(_Piece *p, int to_file, int to_rank)
+_Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank)
 {
   _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
   if(new_move==NULL)
@@ -331,10 +339,34 @@ _Move *Board::make_move(_Piece *p, int to_file, int to_rank)
 //what it should be after a given move is applied
 void Board::apply_move(_Move *move)
 {
+  //if it's a king and they're moving 2 spaces, do a castle
+  if(get_element(move->fromFile, move->fromRank)->type=='K' && (abs((move->fromFile)-(move->toFile))==2))
+  {
+    _SuperPiece *king=get_element(move->fromFile, move->fromRank);
+    
+    //move the rook and apply that
+    int direction;
+    _SuperPiece *rook;
+    
+    if(move->toFile > move->fromFile)
+    {
+      direction=-1;
+      rook=get_element(8,king->rank);
+    }
+    else
+    {
+      direction=1;
+      rook=get_element(1,king->rank);
+    }
+    apply_move(make_move(rook, (move->toFile)+direction, move->toRank));
+    
+    //then move the king by continuing after this if
+  }
+  
   //free any piece that would be "captured"
   if(get_element(move->toFile, move->toRank)!=NULL)
   {
-    _Piece *victim=get_element(move->toFile, move->toRank);
+    _SuperPiece *victim=get_element(move->toFile, move->toRank);
     free(victim);
   }
   
@@ -343,12 +375,24 @@ void Board::apply_move(_Move *move)
   //move the relevant piece
   state[((move->toRank-1)*width)+(move->toFile-1)]=state[((move->fromRank-1)*width)+(move->fromFile-1)];
   
+  _SuperPiece *moved_piece=get_element(move->toFile, move->toRank);
+
+  
   //update that piece's file and rank information so it knows where it now is
-  get_element(move->toFile, move->toRank)->file=(move->toFile);
-  get_element(move->toFile, move->toRank)->rank=(move->toRank);
+  moved_piece->file=(move->toFile);
+  moved_piece->rank=(move->toRank);
+  
+  //and update its move count
+  moved_piece->movements++;
   
   //there is now nothing where the piece previously was
   state[((move->fromRank-1)*width)+(move->fromFile-1)]=NULL;
+  
+  //if it was a pawn and it got to the end, promote it! (using move->promotionType)
+  if(moved_piece->type=='P' && (move->toRank==1 || move->toRank==8))
+  {
+    moved_piece->type=move->promoteType;
+  }
 }
 
 //a transformation to get to the next direction
@@ -368,7 +412,7 @@ int Board::next_direction(int direction)
     }
 }
 
-vector<_Move*> Board::pawn_moves(_Piece *piece)
+vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -389,8 +433,9 @@ vector<_Move*> Board::pawn_moves(_Piece *piece)
     valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
   }
   
+  //TODO: also account for en passant captures
   //if there is someone to attack on either or both diagonals, add that to the legal moves
-  _Piece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
+  _SuperPiece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
   if(to_attack!=NULL && (to_attack->owner!=piece->owner))
   {
     valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
@@ -402,7 +447,7 @@ vector<_Move*> Board::pawn_moves(_Piece *piece)
   }
   
   //if we're still on the starting line and can move two ahead, add that to the legal moves
-  if((piece->owner==1 && piece->rank==7) || (piece->owner==0 && piece->rank==2))
+  if(piece->movements==0)
   {
     if(get_element(piece->file, piece->rank+direction_coefficient)==NULL && get_element(piece->file, piece->rank+(2*direction_coefficient))==NULL)
     {
@@ -413,7 +458,7 @@ vector<_Move*> Board::pawn_moves(_Piece *piece)
   return valid_moves;
 }
 
-vector<_Move*> Board::rook_moves(_Piece *piece)
+vector<_Move*> Board::rook_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -471,7 +516,7 @@ vector<_Move*> Board::rook_moves(_Piece *piece)
   return valid_moves;
 }
 
-vector<_Move*> Board::knight_moves(_Piece *piece)
+vector<_Move*> Board::knight_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -525,7 +570,7 @@ vector<_Move*> Board::knight_moves(_Piece *piece)
   return valid_moves;
 }
 
-vector<_Move*> Board::bishop_moves(_Piece *piece)
+vector<_Move*> Board::bishop_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -576,7 +621,7 @@ vector<_Move*> Board::bishop_moves(_Piece *piece)
   return valid_moves;
 }
 
-vector<_Move*> Board::queen_moves(_Piece *piece)
+vector<_Move*> Board::queen_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -597,7 +642,7 @@ vector<_Move*> Board::queen_moves(_Piece *piece)
   return valid_moves;
 }
 
-vector<_Move*> Board::king_moves(_Piece *piece)
+vector<_Move*> Board::king_moves(_SuperPiece *piece)
 {
   vector<_Move *> valid_moves;
   
@@ -623,13 +668,46 @@ vector<_Move*> Board::king_moves(_Piece *piece)
     }
   }
   
-  //TODO: special case of castling?
+  //verify the king isn't in check before this, and check the number of movements already done
+  int r=(piece->rank);
+  if(((piece->owner==0 && !white_check) || (piece->owner==1 && !black_check)) && piece->movements==0)
+  {
+    //short castle check
+    for(int f=(piece->file+1); f<=8; f++)
+    {
+      //if there's a piece and it's the one allowed rook
+      if((get_element(f,r)!=NULL) && (f==8 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
+      {
+        valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank));
+      }
+      //someone was there that shouldn't have been; break prematurely
+      else if(get_element(f,r)!=NULL)
+      {
+        break;
+      }
+    }
+    //long castle check
+    for(int f=(piece->file-1); f>0; f--)
+    {
+      //if there's a piece and it's the one allowed rook
+      if((get_element(f,r)!=NULL) && (f==1 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
+      {
+        valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank));
+      }
+      //someone was there that shouldn't have been; break prematurely
+      else if(get_element(f,r)!=NULL)
+      {
+        break;
+      }
+    }
+  }
+  
   return valid_moves;
 }
 
 
 //a vector of random moves that can be done the piece in question
-vector<_Move*> Board::legal_moves(_Piece *piece)
+vector<_Move*> Board::legal_moves(_SuperPiece *piece)
 {
   //allocate the data structure we'll be returning
   vector<_Move*> valid_moves;
