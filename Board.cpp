@@ -6,6 +6,9 @@
 //makes internal structures based off of the information we're provided with
 Board::Board(vector<Piece> pieces, Board *parent)
 {
+  white_check=false;
+  black_check=false;
+  
   //set the parent we were given (for root node this should be NULL)
   p=parent;
   
@@ -62,6 +65,9 @@ Board::Board(vector<Piece> pieces, Board *parent)
 //copy constructor
 Board::Board(Board *board)
 {
+  white_check=false;
+  black_check=false;
+  
   //this is the child of the board it was copied from
   p=board;
   
@@ -475,7 +481,7 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
       if(get_element(adjacent->file, adjacent->rank+direction_coefficient)==NULL)
       {
         valid_moves.push_back(make_move(piece, adjacent->file, adjacent->rank+direction_coefficient));
-        printf("Made an En Passant with file offset as %i\n", x_direction);
+ //       printf("Board::pawn_moves() debug 0, made an En Passant with file offset as %i\n", x_direction);
       }
     }
     
