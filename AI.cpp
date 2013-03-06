@@ -131,6 +131,7 @@ Board *AI::board_from_master()
     if(moves.size()>0)
     {
       master->get_element(moves[0].toFile(), moves[0].toRank())->movements++;
+      master->set_last_moved(moves[0].toFile(), moves[0].toRank());
     }
     board=master;
   }
@@ -232,6 +233,13 @@ bool AI::run()
     _Move* move=valid_moves[rand_move_index];
     cout<<"AI::run() debug 1, ACTUALLY MOVING FROM ("<<move->fromFile<<","<<move->fromRank<<") to ("<<move->toFile<<","<<move->toRank<<")"<<endl;
     owned_pieces[rand_index].move(move->toFile, move->toRank, move->promoteType);
+    
+    //if we're moving a pawn diagonally to a place with no enemy
+    if(owned_pieces[rand_index].type()=='P' && board->get_element(move->toFile, move->toRank)==NULL && (move->toFile!=move->fromFile))
+    {
+      //it must be an en passant
+      printf("AI::run(), ACTUALLY TAKING EN PASSANT\n");
+    }
     
     //apply the move we just made to the master board copy also
     master->apply_move(move);

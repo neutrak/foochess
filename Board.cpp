@@ -51,6 +51,9 @@ Board::Board(vector<Piece> pieces, Board *parent)
     }
   }
   
+  //nothing's been moved yet
+  last_moved=NULL;
+  
   //check if we're in check (get it?)
   white_check=in_check(0);
   black_check=in_check(1);
@@ -99,6 +102,9 @@ Board::Board(Board *board)
       }
     }
   }
+  
+  //nothing's been moved yet
+  last_moved=NULL;
   
   //check if we're in check (get it?)
   white_check=in_check(0);
@@ -393,6 +399,18 @@ void Board::apply_move(_Move *move)
   {
     moved_piece->type=move->promoteType;
   }
+  
+  //update the internal board structure to know what was the last thing moved
+  last_moved=moved_piece;
+}
+
+//update an internal variable based on a board position
+void Board::set_last_moved(int file, int rank)
+{
+  if(get_element(file,rank)!=NULL)
+  {
+    last_moved=get_element(file,rank);
+  }
 }
 
 //a transformation to get to the next direction
@@ -433,7 +451,6 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
     valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
   }
   
-  //TODO: also account for en passant captures
   //if there is someone to attack on either or both diagonals, add that to the legal moves
   _SuperPiece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
   if(to_attack!=NULL && (to_attack->owner!=piece->owner))
@@ -445,6 +462,26 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
   {
     valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
   }
+  
+  //also account for en passant captures
+  int x_direction=-1;
+  while(x_direction!=0)
+  {
+    _SuperPiece *adjacent=get_element(piece->file+x_direction, piece->rank);
+    //if we can en passant in this direction
+    if((adjacent!=NULL) && (last_moved==adjacent) && (adjacent->type=='P') && (adjacent->owner!=piece->owner) && (adjacent->movements==1) && (adjacent->rank>3 && adjacent->rank<6))
+    {
+      //if no one's there
+      if(get_element(adjacent->file, adjacent->rank+direction_coefficient)==NULL)
+      {
+        valid_moves.push_back(make_move(piece, adjacent->file, adjacent->rank+direction_coefficient));
+        printf("Made an En Passant with file offset as %i\n", x_direction);
+      }
+    }
+    
+    x_direction=next_direction(x_direction);
+  }
+  
   
   //if we're still on the starting line and can move two ahead, add that to the legal moves
   if(piece->movements==0)

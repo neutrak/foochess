@@ -18,6 +18,9 @@ private:
   bool white_check;
   bool black_check;
   
+  //last moved piece, needed to tell if an en passant is legal
+  _SuperPiece *last_moved;
+  
   //parent
   Board *p;
   vector<Board*> children;
@@ -55,6 +58,9 @@ public:
   //transforms the internal board to be
   //what it should be after a given move is applied
   void apply_move(_Move *move);
+  
+  //update an internal variable based on a board position
+  void set_last_moved(int file, int rank);
   
   //a transformation to get to the next direction
   //returns 0 when there are none left
