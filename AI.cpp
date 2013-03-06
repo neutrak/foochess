@@ -70,7 +70,7 @@ vector <_Move*> AI::generate_moves(Board *board, vector<Piece> owned_pieces, int
         if(post_move->in_check(piece->owner))
         {
           //then it's not really a valid move
-          printf("AI::generate_moves() Warn: We'll be in check after a move from (%i, %i) to (%i, %i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
+          printf("AI::generate_moves() Warn: We'll be in check after a move from (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
           
           //free the associated memory
           free(*i);
@@ -82,7 +82,7 @@ vector <_Move*> AI::generate_moves(Board *board, vector<Piece> owned_pieces, int
         }
         else
         {
-          printf("AI::generate_moves(); random search generated a move from File, Rank (%i, %i) to (%i, %i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
+          printf("AI::generate_moves(); random search generated a move from File, Rank (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
         }
         
         delete post_move;
