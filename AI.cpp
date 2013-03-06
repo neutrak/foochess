@@ -240,6 +240,12 @@ bool AI::run()
       //it must be an en passant
       printf("AI::run(), ACTUALLY TAKING EN PASSANT\n");
     }
+    //if we're moving a king more 2 spaces
+    else if(owned_pieces[rand_index].type()=='K' && abs((move->toFile)-(move->fromFile)==2))
+    {
+      //it's a castle
+      printf("AI::run(), ACTUALLY TAKING CASTLE\n");
+    }
     
     //apply the move we just made to the master board copy also
     master->apply_move(move);
