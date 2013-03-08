@@ -20,6 +20,8 @@ private:
   
   //last moved piece, needed to tell if an en passant is legal
   _SuperPiece *last_moved;
+  //and the last move applied to this board (initially NULL)
+  _Move *last_move_made;
   
   //parent
   Board *p;

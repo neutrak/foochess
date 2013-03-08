@@ -18,7 +18,7 @@ public:
   virtual const char* username();
   virtual const char* password();
   virtual void init();
-  vector <_Move*> generate_moves(Board *board, vector<Piece> owned_pieces, int *piece_index);
+  vector <_Move*> generate_moves(Board *board, vector<Piece> owned_pieces);
   Board *board_from_master();
   virtual bool run();
   virtual void end();

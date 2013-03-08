@@ -56,6 +56,7 @@ Board::Board(vector<Piece> pieces, Board *parent)
   
   //nothing's been moved yet
   last_moved=NULL;
+  last_move_made=NULL;
   
   //check if we're in check (get it?)
   white_check=in_check(0);
@@ -111,6 +112,7 @@ Board::Board(Board *board)
   
   //nothing's been moved yet
   last_moved=NULL;
+  last_move_made=NULL;
   
   //check if we're in check (get it?)
   white_check=in_check(0);
@@ -161,6 +163,13 @@ Board::~Board()
       }
     }
   }
+  
+/*
+  if(last_move_made!=NULL)
+  {
+    free(last_move_made);
+  }
+*/
   
   //and recurse to get all the children
   for(size_t i=0; i<children.size(); i++)
@@ -408,6 +417,7 @@ void Board::apply_move(_Move *move)
   
   //update the internal board structure to know what was the last thing moved
   last_moved=moved_piece;
+  last_move_made=move;
 }
 
 //update an internal variable based on a board position
@@ -722,6 +732,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       if((get_element(f,r)!=NULL) && (f==8 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
         valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank));
+        printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)
@@ -736,6 +747,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       if((get_element(f,r)!=NULL) && (f==1 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
         valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank));
+        printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)

@@ -26,76 +26,67 @@ void AI::init()
 }
 
 //NOTE: the value pointed to by piece_index gets changed in this function
-vector <_Move*> AI::generate_moves(Board *board, vector<Piece> owned_pieces, int *piece_index)
+vector <_Move*> AI::generate_moves(Board *board, vector<Piece> owned_pieces)
 {
+  //the moves we'll return
   vector<_Move*> valid_moves;
   
-  int rand_index;
-  
-  //a running count of the number of pieces we've tried to check
-  //when it gets through all of them, give up
-  int checked_pieces=0;
-  
-  //while there are no legal moves for the selected piece
-  while(valid_moves.empty())
+  //now that we know where the king is, see if any enemy can attack it
+  //file
+  for(size_t f=1; f<=8; f++)
   {
-    if(checked_pieces==owned_pieces.size())
+    //rank
+    for(size_t r=1; r<=8; r++)
     {
-      break;
-    }
-    
-    //of the owned pieces, select one at random
-    rand_index=rand()%(owned_pieces.size());
-    
-    //if we haven't already checked this piece
-    if(!(board->get_element(owned_pieces[rand_index].file(), owned_pieces[rand_index].rank())->haveChecked))
-    {
-      //first, map onto the internal data structure
-      _SuperPiece *piece=board->get_element(owned_pieces[rand_index].file(),owned_pieces[rand_index].rank());
-      
-      //then generate some moves
-      valid_moves=board->legal_moves(piece);
-      
-      //go through all the moves, try making them (as nodes in a tree structure)
-      for(vector<_Move*>::iterator i=valid_moves.begin(); i!=valid_moves.end(); i++)
+      //if this is an owned piece of any kind
+      if(board->get_element(f,r)!=NULL && board->get_element(f,r)->owner==playerID())
       {
-        //copy the current board
-        //NOTE: this copy does NOT need to be free'd; it will be free'd as a result of the destructor call to board
-        Board *post_move=new Board(board);
+        //generate its moves
+        _SuperPiece *p=board->get_element(f,r);
+        vector<_Move*> our_moves=board->legal_moves(p);
         
-        //apply the given move
-        post_move->apply_move(*i);
+        board->get_element(p->file, p->rank)->haveChecked=true;
         
-        //if the result of this move is our owner being in check
-        if(post_move->in_check(piece->owner))
+        //add each move into the valid moves vector
+        vector<_Move*>::iterator i;
+        for(i=our_moves.begin(); i!=our_moves.end(); i++)
         {
-          //then it's not really a valid move
-          printf("AI::generate_moves() Warn: We'll be in check after a move from (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
+          //verify that none end us in check, because in that case we can't make the move
           
-          //free the associated memory
-          free(*i);
+          //copy the current board
+          Board *post_move=new Board(board);
           
-          //remove this move from the vector to return
-          i=valid_moves.erase(i);
-          //the -- is so the ++ in the for loop kicks us back to the proper next element
-          i--;
+          //apply the given move
+          post_move->apply_move(*i);
+          
+          //if the result of this move is our owner being in check
+          if(post_move->in_check(p->owner))
+          {
+            //then it's not really a valid move
+            printf("AI::generate_moves() Warn: We'll be in check after a move from (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
+            
+            //free the associated memory
+            free(*i);
+            
+            //remove this move from the vector to return
+            i=our_moves.erase(i);
+            //the -- is so the ++ in the for loop kicks us back to the proper next element
+            i--;
+            
+            delete post_move;
+          }
+          else
+          {
+            printf("AI::generate_moves(); random search generated a move from File, Rank (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
+            valid_moves.push_back(*i);
+            
+            //make a tree structure
+            board->add_child(post_move);
+          }
         }
-        else
-        {
-          printf("AI::generate_moves(); random search generated a move from File, Rank (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
-        }
-        
-        delete post_move;
       }
-      
-      //remember we've already checked this
-      checked_pieces++;
-      board->get_element(piece->file, piece->rank)->haveChecked=true;
     }
   }
-  
-  //let the calling code know what piece we ended up using
-  *piece_index=rand_index;
   
   return valid_moves;
 }
@@ -218,8 +209,7 @@ bool AI::run()
   }
   
   //pick a piece and a valid move set
-  int rand_index;
-  vector<_Move*> valid_moves=generate_moves(board, owned_pieces, &rand_index);
+  vector<_Move*> valid_moves=generate_moves(board, owned_pieces);
   
   //if we checked all pieces and none had valid moves
   if(valid_moves.empty())
@@ -230,18 +220,31 @@ bool AI::run()
   {
     //make a random move of the legal moves generated earlier
     int rand_move_index=rand()%(valid_moves.size());
+    int rand_piece_index=0;
     _Move* move=valid_moves[rand_move_index];
+    
+    //figure out what piece that movement entails
+    _SuperPiece *moving_piece=board->get_element(move->fromFile, move->fromRank);
+    for(int i=0; i<owned_pieces.size(); i++)
+    {
+      if(owned_pieces[i].file()==moving_piece->file && owned_pieces[i].rank()==moving_piece->rank)
+      {
+        rand_piece_index=i;
+        i=owned_pieces.size();
+      }
+    }
+    
     cout<<"AI::run() debug 1, ACTUALLY MOVING FROM ("<<move->fromFile<<","<<move->fromRank<<") to ("<<move->toFile<<","<<move->toRank<<")"<<endl;
-    owned_pieces[rand_index].move(move->toFile, move->toRank, move->promoteType);
+    owned_pieces[rand_piece_index].move(move->toFile, move->toRank, move->promoteType);
     
     //if we're moving a pawn diagonally to a place with no enemy
-    if(owned_pieces[rand_index].type()=='P' && board->get_element(move->toFile, move->toRank)==NULL && (move->toFile!=move->fromFile))
+    if(owned_pieces[rand_piece_index].type()=='P' && board->get_element(move->toFile, move->toRank)==NULL && (move->toFile!=move->fromFile))
     {
       //it must be an en passant
       printf("AI::run(), ACTUALLY TAKING EN PASSANT\n");
     }
     //if we're moving a king more 2 spaces
-    else if(owned_pieces[rand_index].type()=='K' && abs((move->toFile)-(move->fromFile)==2))
+    else if(owned_pieces[rand_piece_index].type()=='K' && abs((move->toFile)-(move->fromFile)==2))
     {
       //it's a castle
       printf("AI::run(), ACTUALLY TAKING CASTLE\n");
