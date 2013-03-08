@@ -430,6 +430,10 @@ void Board::apply_move(_Move *move)
   //update the internal board structure to know what was the last thing moved
   last_moved=moved_piece;
   last_move_made=move;
+  
+  //update the check data for move generation
+  white_check=in_check(0);
+  black_check=in_check(1);
 }
 
 //update an internal variable based on a board position
