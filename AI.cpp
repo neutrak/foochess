@@ -211,6 +211,9 @@ bool AI::run()
   //pick a piece and a valid move set
   vector<_Move*> valid_moves=generate_moves(board, owned_pieces);
   
+  //we're not using the tree yet, so free the RAM for all those moves from the board
+  board->clear_children();
+  
   //if we checked all pieces and none had valid moves
   if(valid_moves.empty())
   {

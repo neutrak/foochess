@@ -198,6 +198,18 @@ void Board::remove_child(Board *board)
   }
 }
 
+void Board::clear_children()
+{
+  //free memory for all the children
+  for(size_t i=0; i<children.size(); i++)
+  {
+    delete children[i];
+  }
+  
+  //remove the references
+  children.clear();
+}
+
 
 //Output the board
 //(no arguments since all relevant data is already stored in the Board class)
