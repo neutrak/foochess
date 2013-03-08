@@ -1,0 +1,9 @@
+A few notes about this program at a high abstraction level.  
+
+  I made a Board class that stores a game state and has data to be a tree node later.  
+  I modified AI to add a few functions and to call the new functions and board class as needed.  
+  I made a _SuperPiece struct to hold some additional data for pieces (like movements).  
+  I do an integrity check on every move I get from the server to ensure the master board in the AI class is never incorrect.  
+  In order to count movements, the AI class stores the aforementioned "master" board throughout its life.  
+
+
