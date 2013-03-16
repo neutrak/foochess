@@ -255,10 +255,10 @@ void Board::output_board()
   cout<<endl;
 }
 
-//checks whether a given player is in check in the current board
-bool Board::in_check(int player_id)
+//finds the king
+//returns NULL if the king cannot be found
+_SuperPiece *Board::find_king(int player_id)
 {
-  //first, find the king belonging to this player
   _SuperPiece *king=NULL;
   
   //file
@@ -274,6 +274,15 @@ bool Board::in_check(int player_id)
       }
     }
   }
+  return king;
+}
+
+//checks whether a given player is in check at a given position in the current board
+//bool Board::in_check(int player_id, int file, int rank)
+bool Board::in_check(int player_id)
+{
+  //first, find the king belonging to this player
+  _SuperPiece *king=find_king(player_id);
   
   //if we couldn't find the king
   if(king==NULL)
@@ -345,7 +354,7 @@ _SuperPiece *Board::get_element(int file, int rank)
 
 //returns memory for a move structure for a piece
 //(remember to free this later)
-_Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank)
+_Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank, int promote_type)
 {
   _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
   if(new_move==NULL)
@@ -362,8 +371,7 @@ _Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank)
   new_move->fromRank=p->rank;
   new_move->toFile=to_file;
   new_move->toRank=to_rank;
-  //for the moment anything we want to promote would be to a queen
-  new_move->promoteType='Q';
+  new_move->promoteType=promote_type;
   
   return new_move;
 }
@@ -391,7 +399,12 @@ void Board::apply_move(_Move *move)
       direction=1;
       rook=get_element(1,king->rank);
     }
-    apply_move(make_move(rook, (move->toFile)+direction, move->toRank));
+    
+    _Move* rook_move=make_move(rook, (move->toFile)+direction, move->toRank, move->promoteType);
+    apply_move(rook_move);
+    
+    //watch out for that memory
+    free(rook_move);
     
     //then move the king by continuing after this if
   }
@@ -480,19 +493,36 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
   //if we can move forward one, add that to the legal moves
   if(get_element(piece->file, piece->rank+direction_coefficient)==NULL)
   {
-    valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient));
+    //if this piece may be promoted
+    if((direction_coefficient==-1 && piece->rank==2) || (direction_coefficient==1 && piece->rank==7))
+    {
+      //count every possible promotion type as a possible move (null-terminated)
+      const char *promotion_types="RNBQ";
+      
+      int i=0;
+      while(promotion_types[i]!='\0')
+      {
+        valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient, promotion_types[i]));
+        i++;
+      }
+    }
+    else
+    {
+      //in general we're not being promoted so just carry a queen
+      valid_moves.push_back(make_move(piece, piece->file, piece->rank+direction_coefficient,'Q'));
+    }
   }
   
   //if there is someone to attack on either or both diagonals, add that to the legal moves
   _SuperPiece *to_attack=get_element((piece->file)+1, piece->rank+direction_coefficient);
   if(to_attack!=NULL && (to_attack->owner!=piece->owner))
   {
-    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank, 'Q'));
   }
   to_attack=get_element((piece->file)-1, piece->rank+direction_coefficient);
   if(to_attack!=NULL && (to_attack->owner!=piece->owner))
   {
-    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank));
+    valid_moves.push_back(make_move(piece, to_attack->file, to_attack->rank, 'Q'));
   }
   
   //also account for en passant captures
@@ -506,7 +536,7 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
       //if no one's there
       if(get_element(adjacent->file, adjacent->rank+direction_coefficient)==NULL)
       {
-        valid_moves.push_back(make_move(piece, adjacent->file, adjacent->rank+direction_coefficient));
+        valid_moves.push_back(make_move(piece, adjacent->file, adjacent->rank+direction_coefficient, 'Q'));
         printf("Board::pawn_moves() debug 0, made an En Passant with file offset as %i; move is (%i,%i) to (%i,%i)\n", x_direction, piece->file, piece->rank, adjacent->file, adjacent->rank+direction_coefficient);
       }
     }
@@ -520,7 +550,7 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
   {
     if(get_element(piece->file, piece->rank+direction_coefficient)==NULL && get_element(piece->file, piece->rank+(2*direction_coefficient))==NULL)
     {
-      valid_moves.push_back(make_move(piece, piece->file, piece->rank+(2*direction_coefficient)));
+      valid_moves.push_back(make_move(piece, piece->file, piece->rank+(2*direction_coefficient), 'Q'));
     }
   }
   
@@ -545,14 +575,14 @@ vector<_Move*> Board::rook_moves(_SuperPiece *piece)
     for(rank=piece->rank+direction; ((rank>0 && rank<=height) && (get_element(piece->file, rank)==NULL)); rank+=direction)
     {
       //any move until an obstacle or board end is valid
-      valid_moves.push_back(make_move(piece, piece->file, rank));
+      valid_moves.push_back(make_move(piece, piece->file, rank, 'Q'));
     }
     
     //if there was an enemy piece in the way
     if((rank>0 && rank<=height) && (get_element(piece->file, rank)->owner!=(piece->owner)))
     {
       //attacking the enemy is a valid move
-      valid_moves.push_back(make_move(piece, piece->file, rank));
+      valid_moves.push_back(make_move(piece, piece->file, rank, 'Q'));
     }
     
     direction=next_direction(direction); 
@@ -569,14 +599,14 @@ vector<_Move*> Board::rook_moves(_SuperPiece *piece)
     for(file=piece->file+direction; ((file>0 && file<=width) && (get_element(file, piece->rank)==NULL)); file+=direction)
     {
       //any move until an obstacle or board end is valid
-      valid_moves.push_back(make_move(piece, file, piece->rank));
+      valid_moves.push_back(make_move(piece, file, piece->rank, 'Q'));
     }
     
     //if there was an enemy piece in the way
     if((file>0 && file<=width) && (get_element(file, piece->rank)->owner!=(piece->owner)))
     {
       //attacking the enemy is a valid move
-      valid_moves.push_back(make_move(piece, file, piece->rank));
+      valid_moves.push_back(make_move(piece, file, piece->rank, 'Q'));
     }
     
     direction=next_direction(direction); 
@@ -625,7 +655,7 @@ vector<_Move*> Board::knight_moves(_SuperPiece *piece)
           if(get_element((piece->file+x), (piece->rank)+y)==NULL || get_element((piece->file)+x, (piece->rank)+y)->owner!=piece->owner)
           {
             //then it's a valid move
-            valid_moves.push_back(make_move(piece, (piece->file)+x, (piece->rank)+y));
+            valid_moves.push_back(make_move(piece, (piece->file)+x, (piece->rank)+y, 'Q'));
           }
         }
         
@@ -660,7 +690,7 @@ vector<_Move*> Board::bishop_moves(_SuperPiece *piece)
         //there's nothing in the way in a given direction
         if(get_element(f,r)==NULL)
         {
-          valid_moves.push_back(make_move(piece, f, r));
+          valid_moves.push_back(make_move(piece, f, r, 'Q'));
         }
         //we hit something
         else
@@ -668,7 +698,7 @@ vector<_Move*> Board::bishop_moves(_SuperPiece *piece)
           //if we don't own it, attacking it is a valid move
           if(get_element(f,r)->owner!=(piece->owner))
           {
-            valid_moves.push_back(make_move(piece, f, r));
+            valid_moves.push_back(make_move(piece, f, r, 'Q'));
           }
           
           //break the relevant loops, we're done with this direction
@@ -731,7 +761,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
         if(get_element(f,r)==NULL || get_element(f,r)->owner!=piece->owner)
         {
           //it's a valid move to go to f,r
-          valid_moves.push_back(make_move(piece, f, r));
+          valid_moves.push_back(make_move(piece, f, r, 'Q'));
         }
       }
     }
@@ -747,7 +777,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       //if there's a piece and it's the one allowed rook
       if((get_element(f,r)!=NULL) && (f==8 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
-        valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank));
+        valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank, 'Q'));
         printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely
@@ -762,7 +792,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       //if there's a piece and it's the one allowed rook
       if((get_element(f,r)!=NULL) && (f==1 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
-        valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank));
+        valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank, 'Q'));
         printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely

@@ -48,7 +48,11 @@ public:
   //display whatever the current state of the board is
   void output_board();
   
-  //checks whether a given player is in check in the current board
+  //finds the king
+  _SuperPiece *find_king(int player_id);
+  
+  //checks whether a given player is in check at a given position in the current board
+//  bool in_check(int player_id, int file, int rank);
   bool in_check(int player_id);
   
   //the piece at a given location
@@ -56,7 +60,7 @@ public:
   
   //returns memory for a move structure for a piece
   //(remember to free this later)
-  _Move *make_move(_SuperPiece *p, int to_file, int to_rank);
+  _Move *make_move(_SuperPiece *p, int to_file, int to_rank, int promote_type);
   
   //transforms the internal board to be
   //what it should be after a given move is applied
