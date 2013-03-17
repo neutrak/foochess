@@ -6,8 +6,11 @@
 #include <vector>
 using namespace std;
 
-//a lower bound for heuristic values; it's needed a few places
+//bounds for heuristic values; it's needed a few places
 #define HEURISTIC_MINIMUM 0
+//9 is the value for a queen, 16 is the total number of pieces
+//therefore naive point values can never exceed this
+#define HEURISTIC_MAXIMUM (16*9)
 
 class Board
 {

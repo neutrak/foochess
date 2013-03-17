@@ -90,7 +90,7 @@ Board *AI::board_from_master()
 bool AI::run()
 {
   //an algorithm variable so we can re-use generalized code instead of losing old functionality
-  algorithm algo=RANDOM;
+  algorithm algo=ID_DLMM;
   
   Board *board=board_from_master();
   
@@ -146,75 +146,60 @@ bool AI::run()
     cout<<"Last Move Was: "<<endl<<moves[0]<<endl;
   }
   
-  //pick a piece and a valid move set
-  vector<_Move*> valid_moves=generate_moves(board, playerID());
+  _Move* move=NULL;
   
-  //we're not using the tree yet, so free the RAM for all those moves from the board
-//  board->clear_children();
-  
-  //if we checked all pieces and none had valid moves
-  if(valid_moves.empty())
+  if(algo==RANDOM)
   {
-    cout<<"AI::run() debug 0, checkmate!?"<<endl;
+    printf("AI::run() debug 0.5, making random move\n");
+    move=random_move(board,playerID());
   }
-  else
+  else if(algo==ID_DLMM)
   {
-    //make a random move of the legal moves generated earlier
-    int rand_move_index=rand()%(valid_moves.size());
-    int rand_piece_index=0;
-    
-    _Move* move=NULL;
-    
-    if(algo==RANDOM)
-    {
-      printf("AI::run() debug 0.5, making random move\n");
-      move=valid_moves[rand_move_index];
-    }
-    else if(algo==ID_DLMM)
-    {
-      printf("AI::run() debug 0.5, making minimax move\n");
-      move=dl_minimax(board,1,playerID());
-    }
-    
+    printf("AI::run() debug 0.5, making minimax move\n");
+    move=dl_minimax(board,2,playerID());
+  }
+  
+  if(move!=NULL)
+  {
     //figure out what piece that movement entails
+    int piece_index=0;
     _SuperPiece *moving_piece=board->get_element(move->fromFile, move->fromRank);
     for(int i=0; i<owned_pieces.size(); i++)
     {
       if(owned_pieces[i].file()==moving_piece->file && owned_pieces[i].rank()==moving_piece->rank)
       {
-        rand_piece_index=i;
+        piece_index=i;
         i=owned_pieces.size();
       }
     }
     
     cout<<"AI::run() debug 1, ACTUALLY MOVING FROM ("<<move->fromFile<<","<<move->fromRank<<") to ("<<move->toFile<<","<<move->toRank<<")"<<endl;
-    owned_pieces[rand_piece_index].move(move->toFile, move->toRank, move->promoteType);
+    owned_pieces[piece_index].move(move->toFile, move->toRank, move->promoteType);
     
     //if we're moving a pawn diagonally to a place with no enemy
-    if(owned_pieces[rand_piece_index].type()=='P' && board->get_element(move->toFile, move->toRank)==NULL && (move->toFile!=move->fromFile))
+    if(owned_pieces[piece_index].type()=='P' && board->get_element(move->toFile, move->toRank)==NULL && (move->toFile!=move->fromFile))
     {
       //it must be an en passant
       printf("AI::run(), ACTUALLY TAKING EN PASSANT\n");
     }
     //if we're moving a king more 2 spaces
-    else if(owned_pieces[rand_piece_index].type()=='K' && abs((move->toFile)-(move->fromFile)==2))
+    else if(owned_pieces[piece_index].type()=='K' && abs((move->toFile)-(move->fromFile)==2))
     {
       //it's a castle
       printf("AI::run(), ACTUALLY TAKING CASTLE\n");
     }
     
     //apply the move we just made to the master board copy also; but use different memory for management ease
-    master->apply_move(board->copy_move(move));
+    master->apply_move(move);
+  }
+  else
+  {
+    fprintf(stderr, "Err: Could not make a move; no legal moves!?\n");
   }
   
   //handle memory properly
-/*
-  for(size_t i=0; i<valid_moves.size(); i++)
-  {
-    free(valid_moves[i]);
-  }
-*/
-  if(board!=master)
+  //(the NULL check here is defensive)
+  if(board!=NULL && board!=master)
   {
     delete board;
   }
