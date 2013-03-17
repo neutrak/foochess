@@ -6,6 +6,9 @@
 #include <vector>
 using namespace std;
 
+//a lower bound for heuristic values; it's needed a few places
+#define HEURISTIC_MINIMUM 0
+
 class Board
 {
 private:
@@ -40,6 +43,10 @@ public:
   //destructor, cleans up nicely
   ~Board();
   
+  //accessors
+  vector<Board*> get_children(){ return children; }
+  _Move *get_last_move_made(){ return last_move_made; }
+  
   //deal with other nodes in the structure
   void add_child(Board *board);
   void remove_child(Board *board);
@@ -59,8 +66,11 @@ public:
   _SuperPiece *get_element(int file, int rank);
   
   //returns memory for a move structure for a piece
-  //(remember to free this later)
   _Move *make_move(_SuperPiece *p, int to_file, int to_rank, int promote_type);
+  
+  //copies a move
+  //(remember to free this later)
+  _Move *copy_move(_Move *move);
   
   //transforms the internal board to be
   //what it should be after a given move is applied
@@ -85,6 +95,14 @@ public:
   
   //a vector of valid moves that can be done by the piece in question
   vector<_Move*> legal_moves(_SuperPiece *piece);
+  
+  //common heuristics and/or helpers for tree search
+  
+  //just point values as commonly defined
+  int naive_points(int player_id);
+  
+  //point values with position taken into account, etc.
+  int informed_points(int player_id);
 };
 
 #endif

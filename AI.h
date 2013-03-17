@@ -7,6 +7,14 @@
 #include "Board.h"
 using namespace std;
 
+enum algorithm
+{
+  RANDOM,
+  ID_DLMM,
+  
+  ALGO_MAX
+};
+
 ///The class implementing gameplay logic.
 class AI: public BaseAI
 {
@@ -18,7 +26,6 @@ public:
   virtual const char* username();
   virtual const char* password();
   virtual void init();
-  vector <_Move*> generate_moves(Board *board, vector<Piece> owned_pieces);
   Board *board_from_master();
   virtual bool run();
   virtual void end();

@@ -3,6 +3,7 @@
 #include "util.h"
 #include "Board.h"
 #include "SuperPiece.h"
+#include "TreeSearch.h"
 
 AI::AI(Connection* conn) : BaseAI(conn) {}
 
@@ -23,72 +24,6 @@ void AI::init()
   
   //initially the master copy of the board isn't made
   master=NULL;
-}
-
-//NOTE: the value pointed to by piece_index gets changed in this function
-vector <_Move*> AI::generate_moves(Board *board, vector<Piece> owned_pieces)
-{
-  //the moves we'll return
-  vector<_Move*> valid_moves;
-  
-  //now that we know where the king is, see if any enemy can attack it
-  //file
-  for(size_t f=1; f<=8; f++)
-  {
-    //rank
-    for(size_t r=1; r<=8; r++)
-    {
-      //if this is an owned piece of any kind
-      if(board->get_element(f,r)!=NULL && board->get_element(f,r)->owner==playerID())
-      {
-        //generate its moves
-        _SuperPiece *p=board->get_element(f,r);
-        vector<_Move*> our_moves=board->legal_moves(p);
-        
-        board->get_element(p->file, p->rank)->haveChecked=true;
-        
-        //add each move into the valid moves vector
-        vector<_Move*>::iterator i;
-        for(i=our_moves.begin(); i!=our_moves.end(); i++)
-        {
-          //verify that none end us in check, because in that case we can't make the move
-          
-          //copy the current board
-          Board *post_move=new Board(board);
-          
-          //apply the given move
-          post_move->apply_move(*i);
-          
-          //if the result of this move is our owner being in check
-          if(post_move->in_check(p->owner))
-          {
-            //then it's not really a valid move
-            printf("AI::generate_moves() Warn: We'll be in check after a move from (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
-            
-            //free the associated memory
-            free(*i);
-            
-            //remove this move from the vector to return
-            i=our_moves.erase(i);
-            //the -- is so the ++ in the for loop kicks us back to the proper next element
-            i--;
-            
-            delete post_move;
-          }
-          else
-          {
-            printf("AI::generate_moves(); random search generated a move from File, Rank (%i,%i) to (%i,%i)\n",(*i)->fromFile, (*i)->fromRank, (*i)->toFile, (*i)->toRank);
-            valid_moves.push_back(*i);
-            
-            //make a tree structure
-            board->add_child(post_move);
-          }
-        }
-      }
-    }
-  }
-  
-  return valid_moves;
 }
 
 //creates a board based on the master board
@@ -144,7 +79,7 @@ Board *AI::board_from_master()
     board=new Board(master);
     
     //free the move
-    free(current_move);
+//    free(current_move);
   }
   
   return board;
@@ -154,6 +89,9 @@ Board *AI::board_from_master()
 //Return true to end your turn, return false to ask the server for updated information.
 bool AI::run()
 {
+  //an algorithm variable so we can re-use generalized code instead of losing old functionality
+  algorithm algo=RANDOM;
+  
   Board *board=board_from_master();
   
   //this is just an integrity check to make sure data didn't get messed up at some point
@@ -209,10 +147,10 @@ bool AI::run()
   }
   
   //pick a piece and a valid move set
-  vector<_Move*> valid_moves=generate_moves(board, owned_pieces);
+  vector<_Move*> valid_moves=generate_moves(board, playerID());
   
   //we're not using the tree yet, so free the RAM for all those moves from the board
-  board->clear_children();
+//  board->clear_children();
   
   //if we checked all pieces and none had valid moves
   if(valid_moves.empty())
@@ -224,7 +162,19 @@ bool AI::run()
     //make a random move of the legal moves generated earlier
     int rand_move_index=rand()%(valid_moves.size());
     int rand_piece_index=0;
-    _Move* move=valid_moves[rand_move_index];
+    
+    _Move* move=NULL;
+    
+    if(algo==RANDOM)
+    {
+      printf("AI::run() debug 0.5, making random move\n");
+      move=valid_moves[rand_move_index];
+    }
+    else if(algo==ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making minimax move\n");
+      move=dl_minimax(board,1,playerID());
+    }
     
     //figure out what piece that movement entails
     _SuperPiece *moving_piece=board->get_element(move->fromFile, move->fromRank);
@@ -253,15 +203,17 @@ bool AI::run()
       printf("AI::run(), ACTUALLY TAKING CASTLE\n");
     }
     
-    //apply the move we just made to the master board copy also
-    master->apply_move(move);
+    //apply the move we just made to the master board copy also; but use different memory for management ease
+    master->apply_move(board->copy_move(move));
   }
   
   //handle memory properly
+/*
   for(size_t i=0; i<valid_moves.size(); i++)
   {
     free(valid_moves[i]);
   }
+*/
   if(board!=master)
   {
     delete board;

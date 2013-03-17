@@ -164,12 +164,10 @@ Board::~Board()
     }
   }
   
-/*
   if(last_move_made!=NULL)
   {
     free(last_move_made);
   }
-*/
   
   //and recurse to get all the children
   for(size_t i=0; i<children.size(); i++)
@@ -376,6 +374,29 @@ _Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank, int promote_ty
   return new_move;
 }
 
+//copies a move
+//(remember to free this later)
+_Move *Board::copy_move(_Move *move)
+{
+  _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
+  if(new_move==NULL)
+  {
+    fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
+    exit(1);
+  }
+  
+  //connection is not something we're dealing with here
+  new_move->_c=NULL;
+  new_move->id=move->id;
+  new_move->fromFile=move->fromFile;
+  new_move->fromRank=move->fromRank;
+  new_move->toFile=move->toFile;
+  new_move->toRank=move->toRank;
+  new_move->promoteType=move->promoteType;
+  
+  return new_move;
+}
+
 //transforms the internal board to be
 //what it should be after a given move is applied
 void Board::apply_move(_Move *move)
@@ -403,9 +424,6 @@ void Board::apply_move(_Move *move)
     _Move* rook_move=make_move(rook, (move->toFile)+direction, move->toRank, move->promoteType);
     apply_move(rook_move);
     
-    //watch out for that memory
-    free(rook_move);
-    
     //then move the king by continuing after this if
   }
   
@@ -422,7 +440,6 @@ void Board::apply_move(_Move *move)
   state[((move->toRank-1)*width)+(move->toFile-1)]=state[((move->fromRank-1)*width)+(move->fromFile-1)];
   
   _SuperPiece *moved_piece=get_element(move->toFile, move->toRank);
-
   
   //update that piece's file and rank information so it knows where it now is
   moved_piece->file=(move->toFile);
@@ -438,6 +455,12 @@ void Board::apply_move(_Move *move)
   if(moved_piece->type=='P' && (move->toRank==1 || move->toRank==8))
   {
     moved_piece->type=move->promoteType;
+  }
+  
+  //if there was a previous move there's no longer a reference here so free it
+  if(last_move_made!=NULL)
+  {
+    free(last_move_made);
   }
   
   //update the internal board structure to know what was the last thing moved
@@ -778,7 +801,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       if((get_element(f,r)!=NULL) && (f==8 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
         valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank, 'Q'));
-        printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
+//        printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)
@@ -793,7 +816,7 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       if((get_element(f,r)!=NULL) && (f==1 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
         valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank, 'Q'));
-        printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
+//        printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)
@@ -846,4 +869,58 @@ vector<_Move*> Board::legal_moves(_SuperPiece *piece)
   return valid_moves;
 }
 
+//just point values as commonly defined
+int Board::naive_points(int player_id)
+{
+  //accumulator, 0 until we find our pieces
+  register int acc=0;
+  
+  //file
+  for(int f=1; f<=width; f++)
+  {
+    //rank
+    for(int r=1; r<=height; r++)
+    {
+      if(get_element(f,r)!=NULL)
+      {
+        switch(get_element(f,r)->type)
+        {
+          //pawns are worth 1
+          case 'P':
+            acc+=1;
+            break;
+          //knights are worth 3
+          case 'N':
+            acc+=3;
+            break;
+          //bishops are worth 3
+          case 'B':
+            acc+=3;
+            break;
+          //rooks are worth 5
+          case 'R':
+            acc+=5;
+            break;
+          //queens are worth 9
+          case 'Q':
+            acc+=9;
+            break;
+          //DEFENSIVE: if we don't know what type it is just ignore it
+          default:
+            acc+=0;
+            break;
+        }
+      }
+    }
+  }
+  
+  //return the cumulative point value
+  return acc;
+}
+
+//TODO: write the informed_points heuristic
+//point values with position taken into account, etc.
+int Board::informed_points(int player_id)
+{
+}
 
