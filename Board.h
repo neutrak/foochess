@@ -67,6 +67,10 @@ public:
   
   //checks whether a given player is in check at a given position in the current board
   bool in_check(int file, int rank, int player_id);
+  //and helper functions
+  bool in_check_diagonal(int file, int rank, int player_id);
+  bool in_check_cardinal(int file, int rank, int player_id);
+  bool in_check_fromknight(int file, int rank, int player_id);
   
   //the piece at a given location
   _SuperPiece *get_element(int file, int rank);

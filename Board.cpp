@@ -293,6 +293,7 @@ _SuperPiece *Board::find_king(int player_id)
 //checks whether a given player is in check at a given position in the current board
 bool Board::in_check(int file, int rank, int player_id)
 {
+  
   //check for pawn one square away in attack position
   int direction_coefficient=0;
   if(player_id==WHITE)
@@ -315,7 +316,25 @@ bool Board::in_check(int file, int rank, int player_id)
     return true;
   }
   
-  //go through diagonals, if there's an enemy bishop or queen, we're in check
+  //if it's in check from a bishop or queen in the diagonal directions
+  //(or king one space away)
+  if(in_check_diagonal(file,rank,player_id)) return true;
+  
+  //if it's in check from a rook or queen in the cardinal directions
+  //(or king one space away)
+  if(in_check_cardinal(file,rank,player_id)) return true;
+  
+  //if it's in check from a knight
+  if(in_check_fromknight(file,rank,player_id)) return true;
+  
+  //if we got through everything above and didn't end up in check from that, we're not in check!
+  return false;
+}
+
+//go through diagonals, if there's an enemy bishop or queen, we're in check
+//(or a king one space away)
+bool Board::in_check_diagonal(int file, int rank, int player_id)
+{
   for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
   {
     for(int y_direction=-1; y_direction!=0; y_direction=next_direction(y_direction))
@@ -356,7 +375,13 @@ bool Board::in_check(int file, int rank, int player_id)
     }
   }
   
-  //go through cardinal directions, if there's an enemy rook or queen, we're in check
+  return false;
+}
+
+//go through cardinal directions, if there's an enemy rook or queen, we're in check
+//(or a king one space away)
+bool Board::in_check_cardinal(int file, int rank, int player_id)
+{
   for(int direction=-1; direction!=0; direction=next_direction(direction))
   {
     //check a rank
@@ -404,8 +429,12 @@ bool Board::in_check(int file, int rank, int player_id)
     }
   }
   
-  //go through the knight move locations, if there's an enemy knight there we're in check
-  
+  return false;
+}
+
+//go through the knight move locations, if there's an enemy knight there we're in check
+bool Board::in_check_fromknight(int file, int rank, int player_id)
+{
   //x and y are offsets from the file and rank, respectively
   for(int x=1; x<=2; x++)
   {
@@ -443,7 +472,6 @@ bool Board::in_check(int file, int rank, int player_id)
     }
   }
   
-  //if we got through everything above and didn't end up in check from that, we're not in check!
   return false;
 }
 
