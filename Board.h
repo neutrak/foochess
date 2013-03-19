@@ -56,7 +56,7 @@ public:
   
   //deal with other nodes in the structure
   void add_child(Board *board);
-  void remove_child(Board *board);
+  void remove_child(int index);
   void clear_children();
   
   //display whatever the current state of the board is

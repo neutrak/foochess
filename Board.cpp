@@ -186,7 +186,10 @@ Board::~Board()
   //and recurse to get all the children
   for(size_t i=0; i<children.size(); i++)
   {
-    delete children[i];
+    if(children[i]!=NULL)
+    {
+      delete children[i];
+    }
   }
 }
 
@@ -196,17 +199,12 @@ void Board::add_child(Board *board)
   children.push_back(board);
 }
 
-void Board::remove_child(Board *board)
+void Board::remove_child(int index)
 {
-  for(vector<Board*>::iterator i=children.begin(); i!=children.end(); i++)
+  if(index>=0 && index<children.size() && (children[index]!=NULL))
   {
-    if((*i)==board)
-    {
-      i=children.erase(i);
-      
-      //the -- is so the ++ in the for loop kicks us back to the proper next element
-      i--;
-    }
+    delete children[index];
+    children[index]=NULL;
   }
 }
 
@@ -215,7 +213,10 @@ void Board::clear_children()
   //free memory for all the children
   for(size_t i=0; i<children.size(); i++)
   {
-    delete children[i];
+    if(children[i]!=NULL)
+    {
+      delete children[i];
+    }
   }
   
   //remove the references

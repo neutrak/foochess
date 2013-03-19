@@ -126,6 +126,8 @@ int dl_maxV(Board *node, int depth_limit, int player_id)
         maximum=opponent_move;
       }
     }
+    //manage memory; we won't need this any more
+    node->clear_children();
     
     //return the maximum of all the minimums (simulating the other player implicitly)
     return maximum;
@@ -170,6 +172,9 @@ int dl_minV(Board *node, int depth_limit, int player_id)
         minimum=opponent_move;
       }
     }
+    
+    //manage memory; we won't need this any more
+    node->clear_children();
     
     //return the minimum of all the maximums (simulating the other player implicitly)
     return minimum;

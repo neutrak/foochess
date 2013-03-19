@@ -134,6 +134,12 @@ bool AI::run()
     if(players[p].id() == playerID())
     {
       cout<<" (ME)";
+      
+      //if we're running out of time use a random move rather than timing out
+      if(players[p].time() <= RANDOM_FALLBACK_TIME)
+      {
+        algo=RANDOM;
+      }
     }
     cout<<" time remaining: "<<players[p].time()<<endl;
   }

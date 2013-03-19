@@ -7,6 +7,9 @@
 #include "Board.h"
 using namespace std;
 
+//if we have this number of seconds or fewer left on the clock just use random rather than timing out
+#define RANDOM_FALLBACK_TIME 5.0
+
 enum algorithm
 {
   RANDOM,
