@@ -74,12 +74,9 @@ Board *AI::board_from_master()
     current_move->toRank=moves[0].toRank();
     current_move->promoteType=moves[0].promoteType();
     
-    master->apply_move(current_move);
+    master->apply_move(current_move, true);
     //make this board a new copy of that master board
     board=new Board(master);
-    
-    //free the move
-//    free(current_move);
   }
   
   return board;
@@ -90,6 +87,7 @@ Board *AI::board_from_master()
 bool AI::run()
 {
   //an algorithm variable so we can re-use generalized code instead of losing old functionality
+//  algorithm algo=RANDOM;
   algorithm algo=ID_DLMM;
   
   Board *board=board_from_master();
@@ -156,7 +154,7 @@ bool AI::run()
   else if(algo==ID_DLMM)
   {
     printf("AI::run() debug 0.5, making minimax move\n");
-    move=dl_minimax(board,2,playerID());
+    move=dl_minimax(board,3,playerID());
   }
   
   if(move!=NULL)
@@ -190,7 +188,7 @@ bool AI::run()
     }
     
     //apply the move we just made to the master board copy also; but use different memory for management ease
-    master->apply_move(move);
+    master->apply_move(move, true);
   }
   else
   {

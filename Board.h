@@ -7,10 +7,13 @@
 using namespace std;
 
 //bounds for heuristic values; it's needed a few places
-#define HEURISTIC_MINIMUM 0
 //9 is the value for a queen, 16 is the total number of pieces
-//therefore naive point values can never exceed this
+//therefore naive point values can never exceed these bounds
+#define HEURISTIC_MINIMUM (-(16*9))
 #define HEURISTIC_MAXIMUM (16*9)
+
+#define WHITE 0
+#define BLACK 1
 
 class Board
 {
@@ -49,6 +52,7 @@ public:
   //accessors
   vector<Board*> get_children(){ return children; }
   _Move *get_last_move_made(){ return last_move_made; }
+  bool get_check(int player_id){ return (player_id==WHITE) ? white_check : black_check; }
   
   //deal with other nodes in the structure
   void add_child(Board *board);
@@ -62,8 +66,7 @@ public:
   _SuperPiece *find_king(int player_id);
   
   //checks whether a given player is in check at a given position in the current board
-//  bool in_check(int player_id, int file, int rank);
-  bool in_check(int player_id);
+  bool in_check(int file, int rank, int player_id);
   
   //the piece at a given location
   _SuperPiece *get_element(int file, int rank);
@@ -77,7 +80,7 @@ public:
   
   //transforms the internal board to be
   //what it should be after a given move is applied
-  void apply_move(_Move *move);
+  void apply_move(_Move *move, bool update_check);
   
   //update an internal variable based on a board position
   void set_last_moved(int file, int rank);

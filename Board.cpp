@@ -59,15 +59,33 @@ Board::Board(vector<Piece> pieces, Board *parent)
   last_move_made=NULL;
   
   //check if we're in check (get it?)
-  white_check=in_check(0);
-  black_check=in_check(1);
+  _SuperPiece *white_king=find_king(WHITE);
+  if(white_king!=NULL)
+  {
+    white_check=in_check(white_king->file, white_king->rank, WHITE);
+  }
+  else
+  {
+    white_check=true;
+  }
+  
+  _SuperPiece *black_king=find_king(BLACK);
+  if(black_king!=NULL)
+  {
+    black_check=in_check(black_king->file, black_king->rank, BLACK);
+  }
+  else
+  {
+    black_check=true;
+  }
 }
 
 //copy constructor
 Board::Board(Board *board)
 {
-  white_check=false;
-  black_check=false;
+  //get the check information from the old board
+  white_check=board->white_check;
+  black_check=board->black_check;
   
   //this is the child of the board it was copied from
   p=board;
@@ -113,10 +131,6 @@ Board::Board(Board *board)
   //nothing's been moved yet
   last_moved=NULL;
   last_move_made=NULL;
-  
-  //check if we're in check (get it?)
-  white_check=in_check(0);
-  black_check=in_check(1);
 }
 
 //equality check (just checks type, owner, position of pieces, not history or anything)
@@ -276,59 +290,160 @@ _SuperPiece *Board::find_king(int player_id)
 }
 
 //checks whether a given player is in check at a given position in the current board
-//bool Board::in_check(int player_id, int file, int rank)
-bool Board::in_check(int player_id)
+bool Board::in_check(int file, int rank, int player_id)
 {
-  //first, find the king belonging to this player
-  _SuperPiece *king=find_king(player_id);
-  
-  //if we couldn't find the king
-  if(king==NULL)
+  //check for pawn one square away in attack position
+  int direction_coefficient=0;
+  if(player_id==WHITE)
   {
-    //I don't know if it's in check but there are certainly some problems here
+    direction_coefficient=1;
+  }
+  else
+  {
+    direction_coefficient=-1;
+  }
+  
+  _SuperPiece *test_piece=get_element(file+1,rank+direction_coefficient);
+  if(test_piece!=NULL && test_piece->type=='P' && test_piece->owner!=player_id)
+  {
+    return true;
+  }
+  test_piece=get_element(file-1,rank+direction_coefficient);
+  if(test_piece!=NULL && test_piece->type=='P' && test_piece->owner!=player_id)
+  {
     return true;
   }
   
-  bool king_in_check=false;
-  
-  //now that we know where the king is, see if any enemy can attack it
-  //file
-  for(size_t f=1; f<=width; f++)
+  //go through diagonals, if there's an enemy bishop or queen, we're in check
+  for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
   {
-    //rank
-    for(size_t r=1; r<=height; r++)
+    for(int y_direction=-1; y_direction!=0; y_direction=next_direction(y_direction))
     {
-      //if this is an enemy of any kind
-      if(get_element(f,r)!=NULL && get_element(f,r)->owner!=player_id)
+      //file
+      int f=file+x_direction;
+      //rank
+      int r=rank+y_direction;
+      while((f>0 && f<=width) && (r>0 && r<=height))
       {
-        //generate its moves
-        _SuperPiece *p=get_element(f,r);
-        vector<_Move*> enemy_moves=legal_moves(p);
-        
-        for(size_t m=0; m<enemy_moves.size(); m++)
+        //we hit something
+        if(get_element(f,r)!=NULL)
         {
-          //if it can attack us, then we are indeed in check
-          if((enemy_moves[m]->toFile)==(king->file) && (enemy_moves[m]->toRank)==(king->rank))
+          if(get_element(f,r)->owner!=(player_id))
           {
-            king_in_check=true;
+            //it's an enemy that's either a bishop or queen
+            if(get_element(f,r)->type=='B' || get_element(f,r)->type=='Q')
+            {
+              //we're in check from it
+              return true;
+            }
+            //it's an enemy king one space away
+            else if(get_element(f,r)->type=='K' && (f==(file+x_direction)) && (r==(rank+y_direction)))
+            {
+              return true;
+            }
           }
           
-          //free the RAM
-          free(enemy_moves[m]);
+          //break the relevant loops, we're done with this direction
+          f=-1;
+          r=-1;
         }
         
-        //save some clock cycles
-        //break the loop after we find an attacking piece
-        if(king_in_check)
+        //try the next diagonal coordinate
+        f+=x_direction;
+        r+=y_direction;
+      }
+    }
+  }
+  
+  //go through cardinal directions, if there's an enemy rook or queen, we're in check
+  for(int direction=-1; direction!=0; direction=next_direction(direction))
+  {
+    //check a rank
+    int r;
+    //the +direction in initialization is because no-op is not a valid move
+    for(r=rank+direction; (r>0 && r<=height); r+=direction)
+    {
+      //if there's an enemy piece there
+      if(get_element(file,r)!=NULL && get_element(file,r)->owner!=player_id)
+      {
+        //if it's a rook or queen
+        if(get_element(file,r)->type=='R' || get_element(file,r)->type=='Q')
         {
-          f=width+1;
-          r=height+1;
+          return true;
+        }
+        //it's a king one space away
+        else if(get_element(file,r)->type=='K' && (r==(rank+direction)))
+        {
+          return true;
+        }
+      }
+    }
+  }
+  for(int direction=-1; direction!=0; direction=next_direction(direction))
+  {
+    //check a file
+    int f;
+    //the +direction in initialization is because no-op is not a valid move
+    for(f=file+direction; (f>0 && f<=width); f+=direction)
+    {
+      //if there's an enemy piece there
+      if(get_element(f,rank)!=NULL && get_element(f,rank)->owner!=player_id)
+      {
+        //if it's a rook or queen
+        if(get_element(f,rank)->type=='R' || get_element(f,rank)->type=='Q')
+        {
+          return true;
+        }
+        //it's a king one space away
+        else if(get_element(f,rank)->type=='K' && (f==(file+direction)))
+        {
+          return true;
         }
       }
     }
   }
   
-  return king_in_check;
+  //go through the knight move locations, if there's an enemy knight there we're in check
+  
+  //x and y are offsets from the file and rank, respectively
+  for(int x=1; x<=2; x++)
+  {
+    //y and x must never be equal in magnitude
+    //the below if-else ensures that
+    int y;
+    
+    if(x==1)
+    {
+      y=2;
+    }
+    else
+    {
+      y=1;
+    }
+    
+    //the direction in which we're checking
+    for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
+    {
+      x*=-1;
+      for(int y_direction=-1; y_direction!=0; y_direction=next_direction(y_direction))
+      {
+        y*=-1;
+        
+        //NOTE: bounds checking is done in get_element, which will return NULL if we're not in the bounds
+        _SuperPiece *enemy=get_element((file+x), (rank)+y);
+        
+        //if there's an enemy knight there
+        if(enemy!=NULL && enemy->owner!=player_id && enemy->type=='N')
+        {
+          //then we're in check
+          return true;
+        }
+      }
+    }
+  }
+  
+  //if we got through everything above and didn't end up in check from that, we're not in check!
+  return false;
 }
 
 //returns the piece at a given location
@@ -399,7 +514,7 @@ _Move *Board::copy_move(_Move *move)
 
 //transforms the internal board to be
 //what it should be after a given move is applied
-void Board::apply_move(_Move *move)
+void Board::apply_move(_Move *move, bool update_check)
 {
   //if it's a king and they're moving 2 spaces, do a castle
   if(get_element(move->fromFile, move->fromRank)->type=='K' && (abs((move->fromFile)-(move->toFile))==2))
@@ -422,7 +537,7 @@ void Board::apply_move(_Move *move)
     }
     
     _Move* rook_move=make_move(rook, (move->toFile)+direction, move->toRank, move->promoteType);
-    apply_move(rook_move);
+    apply_move(rook_move, true);
     
     //then move the king by continuing after this if
   }
@@ -467,9 +582,29 @@ void Board::apply_move(_Move *move)
   last_moved=moved_piece;
   last_move_made=move;
   
-  //update the check data for move generation
-  white_check=in_check(0);
-  black_check=in_check(1);
+  //update the check data for move generation, if desired
+  if(update_check)
+  {
+    _SuperPiece *white_king=find_king(WHITE);
+    if(white_king!=NULL)
+    {
+      white_check=in_check(white_king->file, white_king->rank, WHITE);
+    }
+    else
+    {
+      white_check=true;
+    }
+    
+    _SuperPiece *black_king=find_king(BLACK);
+    if(black_king!=NULL)
+    {
+      black_check=in_check(black_king->file, black_king->rank, BLACK);
+    }
+    else
+    {
+      black_check=true;
+    }
+  }
 }
 
 //update an internal variable based on a board position
@@ -800,8 +935,12 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       //if there's a piece and it's the one allowed rook
       if((get_element(f,r)!=NULL) && (f==8 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
-        valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank, 'Q'));
-//        printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
+        //if the empty location in between start and destination isn't in check
+        if(!in_check(piece->file+1, piece->rank, piece->owner))
+        {
+          valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank, 'Q'));
+//          printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
+        }
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)
@@ -815,8 +954,12 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
       //if there's a piece and it's the one allowed rook
       if((get_element(f,r)!=NULL) && (f==1 && get_element(f,r)->type=='R' && get_element(f,r)->owner==piece->owner && get_element(f,r)->movements==0))
       {
-        valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank, 'Q'));
-//        printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
+        //if the empty location in between start and destination isn't in check
+        if(!in_check(piece->file-1, piece->rank, piece->owner))
+        {
+          valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank, 'Q'));
+//          printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
+        }
       }
       //someone was there that shouldn't have been; break prematurely
       else if(get_element(f,r)!=NULL)
