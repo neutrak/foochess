@@ -223,6 +223,32 @@ void Board::clear_children()
   children.clear();
 }
 
+//a helper function to randomize children (and by extension move choices)
+void Board::shuffle_children()
+{
+  //you can't shuffle a non-existant vector, give up
+  if(children.empty())
+  {
+    return;
+  }
+  
+  //how many times to swap a couple elements
+  int shuffle_iterations=5000;
+  
+  for(int swaps=0; swaps<shuffle_iterations; swaps++)
+  {
+    //pick a random index in the vector
+    int first=rand()%(children.size());
+    //pick a second random index to swap with the first one
+    int second=rand()%(children.size());
+    
+    //do the swap
+    //(this could be done without tmp with an xor operation, but memory isn't what we care about here)
+    Board *tmp=children[first];
+    children[first]=children[second];
+    children[second]=tmp;
+  }
+}
 
 //Output the board
 //(no arguments since all relevant data is already stored in the Board class)

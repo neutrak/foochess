@@ -63,6 +63,10 @@ vector <_Move*> generate_moves(Board *board, int player_id)
     }
   }
   
+  //board->shuffle_children randomizes children (created by applying moves)
+  //so nodes with equal heuristic values don't always get taken in the same order
+  board->shuffle_children();
+  
   return valid_moves;
 }
 

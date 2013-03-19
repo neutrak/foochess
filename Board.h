@@ -58,6 +58,8 @@ public:
   void add_child(Board *board);
   void remove_child(int index);
   void clear_children();
+  //a helper function to randomize children (and by extension move choices)
+  void shuffle_children();
   
   //display whatever the current state of the board is
   void output_board();
