@@ -109,7 +109,8 @@ int dl_maxV(Board *node, int depth_limit, int player_id)
   else if(depth_limit<=0)
   {
 //    return node->naive_points(player_id);
-    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
+//    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
+    return -(node->naive_points(!player_id));
   }
   //else it's determined by the max player's actions, so make some more calls
   else
@@ -155,7 +156,8 @@ int dl_minV(Board *node, int depth_limit, int player_id)
   else if(depth_limit<=0)
   {
 //    return node->naive_points(player_id);
-    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
+//    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
+    return -(node->naive_points(!player_id));
   }
   //else it's determined by the min player's actions, so make some more calls
   else
@@ -218,7 +220,9 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     int heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id);
 //    int heuristic=root->get_children()[i]->naive_points(player_id);
-    if(heuristic>current_max)
+    
+    //if we don't have a move yet take this one regardless of heuristic
+    if(heuristic>current_max || max_move==NULL)
     {
       current_max=heuristic;
       
@@ -231,11 +235,8 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
       max_move=root->copy_move(root->get_children()[i]->get_last_move_made());
     }
     
-    if(max_move!=NULL)
-    {
-//      printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i\n", i, frontier.size(), current_max);
-      printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i (%i,%i to %i,%i)\n", i, frontier.size(), current_max, max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
-    }
+//    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i\n", i, frontier.size(), current_max);
+    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i (%i,%i to %i,%i)\n", i, frontier.size(), current_max, max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
   }
   
   //clean up memory from those recursive calls
