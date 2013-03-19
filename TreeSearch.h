@@ -10,8 +10,8 @@ vector <_Move*> generate_moves(Board *board, int player_id);
 _Move *random_move(Board *board, int player_id);
 
 //helper functions for depth-limited minimax
-int dl_maxV(Board *node, int depth_limit, int player_id);
-int dl_minV(Board *node, int depth_limit, int player_id);
+double dl_maxV(Board *node, int depth_limit, int player_id);
+double dl_minV(Board *node, int depth_limit, int player_id);
 
 //depth-limited minimax
 _Move *dl_minimax(Board *root, int depth_limit, int player_id);

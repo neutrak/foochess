@@ -91,7 +91,7 @@ _Move *random_move(Board *board, int player_id)
 
 
 //helper functions for depth-limited minimax
-int dl_maxV(Board *node, int depth_limit, int player_id)
+double dl_maxV(Board *node, int depth_limit, int player_id)
 {
 //  printf("dl_maxV debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
@@ -110,7 +110,8 @@ int dl_maxV(Board *node, int depth_limit, int player_id)
   {
 //    return node->naive_points(player_id);
 //    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
-    return -(node->naive_points(!player_id));
+//    return -(node->naive_points(!player_id));
+    return (node->naive_points(player_id)*0.5)-(node->naive_points(!player_id));
   }
   //else it's determined by the max player's actions, so make some more calls
   else
@@ -138,7 +139,7 @@ int dl_maxV(Board *node, int depth_limit, int player_id)
   return HEURISTIC_MINIMUM;
 }
 
-int dl_minV(Board *node, int depth_limit, int player_id)
+double dl_minV(Board *node, int depth_limit, int player_id)
 {
 //  printf("dl_minV debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
@@ -157,7 +158,8 @@ int dl_minV(Board *node, int depth_limit, int player_id)
   {
 //    return node->naive_points(player_id);
 //    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
-    return -(node->naive_points(!player_id));
+//    return -(node->naive_points(!player_id));
+    return (node->naive_points(player_id)*0.5)-(node->naive_points(!player_id));
   }
   //else it's determined by the min player's actions, so make some more calls
   else
@@ -209,7 +211,7 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
   //the first player is always max-ing
   //initially current_max is the lowest possible heuristic value
   //NOTE: change this as needed to reflect the lowest possible heuristic value
-  int current_max=HEURISTIC_MINIMUM;
+  double current_max=HEURISTIC_MINIMUM;
   //initially the move that got us that desired max value is null
   _Move *max_move=NULL;
   
@@ -218,8 +220,8 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
   {
     //NOTE: this section depends on the heuristic used
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
-    int heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id);
-//    int heuristic=root->get_children()[i]->naive_points(player_id);
+    double heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id);
+//    double heuristic=root->get_children()[i]->naive_points(player_id);
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
@@ -235,8 +237,8 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
       max_move=root->copy_move(root->get_children()[i]->get_last_move_made());
     }
     
-//    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i\n", i, frontier.size(), current_max);
-    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %i (%i,%i to %i,%i)\n", i, frontier.size(), current_max, max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
+//    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %lf\n", i, frontier.size(), current_max);
+    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %lf (%i,%i to %i,%i)\n", i, frontier.size(), current_max, max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
   }
   
   //clean up memory from those recursive calls
