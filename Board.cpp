@@ -1090,6 +1090,10 @@ int Board::naive_points(int player_id)
           case 'Q':
             acc+=9;
             break;
+          //a king is by far the most valuable thing to get
+          case 'K':
+            acc+=9;
+            break;
           //DEFENSIVE: if we don't know what type it is just ignore it
           default:
             acc+=0;
