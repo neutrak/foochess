@@ -389,19 +389,25 @@ bool Board::in_check_cardinal(int file, int rank, int player_id)
     //the +direction in initialization is because no-op is not a valid move
     for(r=rank+direction; (r>0 && r<=height); r+=direction)
     {
-      //if there's an enemy piece there
-      if(get_element(file,r)!=NULL && get_element(file,r)->owner!=player_id)
+      //if there's a piece there
+      if(get_element(file,r)!=NULL)
       {
-        //if it's a rook or queen
-        if(get_element(file,r)->type=='R' || get_element(file,r)->type=='Q')
+        //if it's an enemy
+        if(get_element(file,r)->owner!=player_id)
         {
-          return true;
+          //if it's a rook or queen
+          if(get_element(file,r)->type=='R' || get_element(file,r)->type=='Q')
+          {
+            return true;
+          }
+          //it's a king one space away
+          else if(get_element(file,r)->type=='K' && (r==(rank+direction)))
+          {
+            return true;
+          }
         }
-        //it's a king one space away
-        else if(get_element(file,r)->type=='K' && (r==(rank+direction)))
-        {
-          return true;
-        }
+        //stop looking after we hit someone regardless of its owner
+        r+=(height*direction);
       }
     }
   }
@@ -412,20 +418,27 @@ bool Board::in_check_cardinal(int file, int rank, int player_id)
     //the +direction in initialization is because no-op is not a valid move
     for(f=file+direction; (f>0 && f<=width); f+=direction)
     {
-      //if there's an enemy piece there
-      if(get_element(f,rank)!=NULL && get_element(f,rank)->owner!=player_id)
+      //if there's a piece there
+      if(get_element(f,rank)!=NULL)
       {
-        //if it's a rook or queen
-        if(get_element(f,rank)->type=='R' || get_element(f,rank)->type=='Q')
+        //if it's an enemy
+        if(get_element(f,rank)->owner!=player_id)
         {
-          return true;
+          //if it's a rook or queen
+          if(get_element(f,rank)->type=='R' || get_element(f,rank)->type=='Q')
+          {
+            return true;
+          }
+          //it's a king one space away
+          else if(get_element(f,rank)->type=='K' && (f==(file+direction)))
+          {
+            return true;
+          }
         }
-        //it's a king one space away
-        else if(get_element(f,rank)->type=='K' && (f==(file+direction)))
-        {
-          return true;
-        }
+        //stop looking after we hit someone regardless of its owner
+        f+=(width*direction);
       }
+
     }
   }
   
