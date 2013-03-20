@@ -93,103 +93,112 @@ _Move *random_move(Board *board, int player_id)
   return move;
 }
 
-
 //helper functions for depth-limited minimax
-double dl_maxV(Board *node, int depth_limit, int player_id)
+
+//this serves the functions of dl_maxV, dl_minV, abdl_maxV, and abdl_minV
+//those functions themselves just carefully choose the arguments to give to this
+//max should be true to max, false to min
+//prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
+//TODO: add pruning handling to this when prune is true
+double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta)
 {
-//  printf("dl_maxV debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
+//  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
+  
+  //by doing these terminal node checks before the generate_moves call we save a lot of time
+  
+  //if we hit the depth limit return the heuristic at this level
+  //the < is defensive, == should work but just in case
+  if(depth_limit<=0)
+  {
+    //a local player id, since for min player we want to flip this back for the purposes of heuristic value calcualtion
+    int pid=player_id;
+    if(!max)
+    {
+      pid!=pid;
+    }
+    
+//    return node->naive_points(pid); //keep ourselves alive above all else
+//    return ((node->naive_points(pid))-(node->naive_points(!pid))); //make us have a higher score than the enemy above all else
+//    return -(node->naive_points(!pid)); //kill the enemy above all else
+    return (node->naive_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+  }
   
   //generate children for the given node
   generate_moves(node,player_id);
+//  printf("general_min_or_max_pruning debug 0.5, generating for player %i, depth limit %i; generated %i children\n", player_id, depth_limit, node->get_children().size());
   
-  //if it's an end state return the known value
+  //if it's an end state because we have no legal moves (draw) return the known value
   if(node->get_children().empty())
   {
-    //no legal moves for us, failure (return heuristic minimum)
+//    printf("general_min_or_max_pruning debug 1\n");
+    //NOTE: there's no need to do a check here since we return the same in either case
+/*
+    if(node->get_check(player_id))
+    {
+      //checkmate where we lose
+    }
+    else
+    {
+      //stalemate due to no valid moves
+    }
+*/
+    
+    //no legal moves for us, failure (return worst case for this player)
+//    return (max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
     return HEURISTIC_MINIMUM;
   }
-  //else if we hit the depth limit return the heuristic at this level
-  //the < is defensive, == should work but just in case
-  else if(depth_limit<=0)
+  //a checkmate occurs when a player is in check and has no legal moves, so check for that
+  //in that case it's VERY VERY GOOD for this player (otherwise fall through and recurse)
+  else if(node->get_check(!player_id))
   {
-//    return node->naive_points(player_id);
-//    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
-//    return -(node->naive_points(!player_id));
-    return (node->naive_points(player_id)*0.5)-(node->naive_points(!player_id));
-  }
-  //else it's determined by the max player's actions, so make some more calls
-  else
-  {
-    //go through all children and find the maximum of the minV calls for those nodes
-    int maximum=HEURISTIC_MINIMUM;
-    for(int i=0; i<(node->get_children().size()); i++)
-    {
-//      printf("dl_maxV debug 1, on child index %i (%i total)\n", i, node->get_children().size());
-      
-      int opponent_move=dl_minV(node->get_children()[i], depth_limit-1, player_id);
-      if(opponent_move>maximum)
-      {
-        maximum=opponent_move;
-      }
-    }
-    //manage memory; we won't need this any more
-    node->clear_children();
+//    printf("general_min_or_max_pruning debug 2\n");
+    Board *b=new Board(node);
+    generate_moves(b,!player_id);
     
-    //return the maximum of all the minimums (simulating the other player implicitly)
-    return maximum;
+    if(b->get_children().empty())
+    {
+//      printf("general_min_or_max_pruning debug 3\n");
+      delete b;
+//      return (max)? HEURISTIC_MAXIMUM : HEURISTIC_MINIMUM;
+      return HEURISTIC_MAXIMUM;
+    }
+    delete b;
   }
   
-  //defensive; for the moment this can't fall through but we never want to return uninitialized data (just in case)
-  return HEURISTIC_MINIMUM;
+  //if we got through that and didn't return it's determined by the other player's actions, so make some more calls
+  //go through all children and find the best assuming the opponent makes good choices
+  double best=(max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
+  
+  for(int i=0; i<(node->get_children().size()); i++)
+  {
+//    printf("general_min_or_max_pruning debug 4, on child index %i (%i total)\n", i, node->get_children().size());
+    
+//    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, player_id, !max, prune, alpha, beta);
+    
+    //note on the recursive calls we generate the moves for the other player
+    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta);
+    
+    //if this move is better than the current best, it's the new best
+    if((max && opponent_move>best) || (!max && opponent_move<best))
+    {
+      best=opponent_move;
+    }
+  }
+  //manage memory; we won't need this any more
+  node->clear_children();
+  
+  //return the best of all the worst from recursion (simulating the other player implicitly)
+  return best;
+}
+
+double dl_maxV(Board *node, int depth_limit, int player_id)
+{
+  return general_min_or_max_pruning(node, depth_limit, player_id, true, false, 0, 0);
 }
 
 double dl_minV(Board *node, int depth_limit, int player_id)
 {
-//  printf("dl_minV debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
-  
-  //generate children for the given node
-  generate_moves(node,!player_id);
-  
-  //if it's an end state return the known value
-  if(node->get_children().empty())
-  {
-    //no legal moves for enemy, success! (return heuristic maximum)
-    return HEURISTIC_MAXIMUM;
-  }
-  //else if we hit the depth limit return the heuristic at this level
-  //the < is defensive, == should work but just in case
-  else if(depth_limit<=0)
-  {
-//    return node->naive_points(player_id);
-//    return ((node->naive_points(player_id))-(node->naive_points(!player_id)));
-//    return -(node->naive_points(!player_id));
-    return (node->naive_points(player_id)*0.5)-(node->naive_points(!player_id));
-  }
-  //else it's determined by the min player's actions, so make some more calls
-  else
-  {
-    //go through all children and find the minimum of the maxV calls for those nodes
-    int minimum=HEURISTIC_MAXIMUM;
-    for(int i=0; i<(node->get_children().size()); i++)
-    {
-//      printf("dl_minV debug 1, on child index %i (%i total)\n", i, node->get_children().size());
-      
-      int opponent_move=dl_maxV(node->get_children()[i], depth_limit-1, player_id);
-      if(opponent_move<minimum)
-      {
-        minimum=opponent_move;
-      }
-    }
-    
-    //manage memory; we won't need this any more
-    node->clear_children();
-    
-    //return the minimum of all the maximums (simulating the other player implicitly)
-    return minimum;
-  }
-  
-  //defensive; for the moment this can't fall through but we never want to return uninitialized data (just in case)
-  return HEURISTIC_MAXIMUM;
+  return general_min_or_max_pruning(node, depth_limit, player_id, false, false, 0, 0);
 }
 
 //depth-limited minimax
@@ -225,7 +234,6 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
     //NOTE: this section depends on the heuristic used
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     double heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id);
-//    double heuristic=root->get_children()[i]->naive_points(player_id);
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
