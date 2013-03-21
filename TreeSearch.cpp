@@ -70,6 +70,49 @@ vector <_Move*> generate_moves(Board *board, int player_id)
   return valid_moves;
 }
 
+//returns true if there is a stalemate caused by repeated moves
+//else false
+bool stalemate_by_repeat(vector <_Move*> move_accumulator)
+{
+  //if there weren't enough moves to /possibly/ cause a problem
+  if(move_accumulator.size()<8)
+  {
+    //there's no problem!
+    return false;
+  }
+  
+  for(int i=0; i<4; i++)
+  {
+    _Move *early_move=move_accumulator[move_accumulator.size()-5-i];
+    _Move *later_move=move_accumulator[move_accumulator.size()-1-i];
+    
+    //if the moves didn't start in the same spot
+    if( !((early_move->fromFile == later_move->fromFile) && (early_move->fromRank == later_move->fromRank)) )
+    {
+      return false;
+    }
+    //else if the moves didn't end in the same spot
+    else if( !((early_move->toFile == later_move->toFile) && (early_move->toRank == later_move->toRank)) )
+    {
+      return false;
+    }
+    //else this pair of moves /is/ equal, try the next pair
+  }
+  
+  //if we didn't find any move for which there was not a repeat
+  //then this /is/ a stalemate by repeat
+  return true;
+}
+
+//free the memory referenced by a move accumulator vector
+void free_move_acc(vector <_Move*> move_accumulator)
+{
+  for(int i=0; i<move_accumulator.size(); i++)
+  {
+    free(move_accumulator[i]);
+  }
+}
+
 //make a random [legal] move
 _Move *random_move(Board *board, int player_id)
 {
@@ -100,37 +143,19 @@ _Move *random_move(Board *board, int player_id)
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
 //TODO: add pruning handling to this when prune is true
-double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta)
+double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator)
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
-  //by doing these terminal node checks before the generate_moves call we save a lot of time
-  
-  //if we hit the depth limit return the heuristic at this level
-  //the < is defensive, == should work but just in case
-  if(depth_limit<=0)
-  {
-    //a local player id, since for min player we want to flip this back for the purposes of heuristic value calcualtion
-    int pid=player_id;
-    if(!max)
-    {
-      pid!=pid;
-    }
-    
-//    return node->naive_points(pid); //keep ourselves alive above all else
-//    return ((node->naive_points(pid))-(node->naive_points(!pid))); //make us have a higher score than the enemy above all else
-//    return -(node->naive_points(!pid)); //kill the enemy above all else
-    return (node->naive_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
-  }
+  //note: we can't do the terminal node checks before the generate_moves call
+  //because whether it's a terminal node or not dependson move generation
   
   //generate children for the given node
   generate_moves(node,player_id);
-//  printf("general_min_or_max_pruning debug 0.5, generating for player %i, depth limit %i; generated %i children\n", player_id, depth_limit, node->get_children().size());
   
   //if it's an end state because we have no legal moves (draw) return the known value
   if(node->get_children().empty())
   {
-//    printf("general_min_or_max_pruning debug 1\n");
     //NOTE: there's no need to do a check here since we return the same in either case
 /*
     if(node->get_check(player_id))
@@ -143,6 +168,7 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
     }
 */
     
+    free_move_acc(move_accumulator);
     //no legal moves for us, failure (return worst case for this player)
 //    return (max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
     return HEURISTIC_MINIMUM;
@@ -151,18 +177,42 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
   //in that case it's VERY VERY GOOD for this player (otherwise fall through and recurse)
   else if(node->get_check(!player_id))
   {
-//    printf("general_min_or_max_pruning debug 2\n");
     Board *b=new Board(node);
     generate_moves(b,!player_id);
     
     if(b->get_children().empty())
     {
-//      printf("general_min_or_max_pruning debug 3\n");
       delete b;
+      free_move_acc(move_accumulator);
 //      return (max)? HEURISTIC_MAXIMUM : HEURISTIC_MINIMUM;
       return HEURISTIC_MAXIMUM;
     }
     delete b;
+  }
+  //else if we've repeated moves in a bad way, it's a stalemate by repeat
+  //return with a worst-case value
+  else if(stalemate_by_repeat(move_accumulator))
+  {
+    free_move_acc(move_accumulator);
+    return HEURISTIC_MINIMUM;
+  }
+  //else if we hit the depth limit return the heuristic at this level
+  //the < is defensive, == should work but just in case
+  else if(depth_limit<=0)
+  {
+    //a local player id, since for min player we want to flip this back for the purposes of heuristic value calcualtion
+    int pid=player_id;
+    if(!max)
+    {
+      pid!=pid;
+    }
+    
+    free_move_acc(move_accumulator);
+    
+//    return node->naive_points(pid); //keep ourselves alive above all else
+//    return ((node->naive_points(pid))-(node->naive_points(!pid))); //make us have a higher score than the enemy above all else
+//    return -(node->naive_points(!pid)); //kill the enemy above all else
+    return (node->naive_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
   }
   
   //if we got through that and didn't return it's determined by the other player's actions, so make some more calls
@@ -171,12 +221,17 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
   
   for(int i=0; i<(node->get_children().size()); i++)
   {
-//    printf("general_min_or_max_pruning debug 4, on child index %i (%i total)\n", i, node->get_children().size());
+    //make a new move accumulator to pass to the recursive call
+    vector <_Move*> new_move_acc;
+    for(int n=0; n<move_accumulator.size(); n++)
+    {
+      new_move_acc.push_back(node->copy_move(move_accumulator[n]));
+    }
+    //add on the move made to get to this child
+    new_move_acc.push_back(node->copy_move(node->get_children()[i]->get_last_move_made()));
     
-//    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, player_id, !max, prune, alpha, beta);
-    
-    //note on the recursive calls we generate the moves for the other player
-    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta);
+    //NOTE: on the recursive calls we generate the moves for the /other/ player
+    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta, new_move_acc);
     
     //if this move is better than the current best, it's the new best
     if((max && opponent_move>best) || (!max && opponent_move<best))
@@ -187,24 +242,26 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
   //manage memory; we won't need this any more
   node->clear_children();
   
+  free_move_acc(move_accumulator);
+  
   //return the best of all the worst from recursion (simulating the other player implicitly)
   return best;
 }
 
-double dl_maxV(Board *node, int depth_limit, int player_id)
+double dl_maxV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
-  return general_min_or_max_pruning(node, depth_limit, player_id, true, false, 0, 0);
+  return general_min_or_max_pruning(node, depth_limit, player_id, true, false, 0, 0, move_accumulator);
 }
 
-double dl_minV(Board *node, int depth_limit, int player_id)
+double dl_minV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
-  return general_min_or_max_pruning(node, depth_limit, player_id, false, false, 0, 0);
+  return general_min_or_max_pruning(node, depth_limit, player_id, false, false, 0, 0, move_accumulator);
 }
 
 //depth-limited minimax
-_Move *dl_minimax(Board *root, int depth_limit, int player_id)
+_Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
-  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
+//  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
   //the tree-search frontier
   std::vector<Board*> frontier;
@@ -231,9 +288,18 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
   //go through the frontier, find the max value of all children (which will be determined recursively)
   for(int i=0; i<frontier.size(); i++)
   {
+    //make a new move accumulator to pass to the recursive call
+    vector <_Move*> new_move_acc;
+    for(int n=0; n<move_accumulator.size(); n++)
+    {
+      new_move_acc.push_back(root->copy_move(move_accumulator[n]));
+    }
+    //add on the move made to get to this child
+    new_move_acc.push_back(root->copy_move(root->get_children()[i]->get_last_move_made()));
+    
     //NOTE: this section depends on the heuristic used
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
-    double heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id);
+    double heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id, new_move_acc);
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
@@ -248,9 +314,6 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
       
       max_move=root->copy_move(root->get_children()[i]->get_last_move_made());
     }
-    
-//    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %lf\n", i, frontier.size(), current_max);
-    printf("dl_minimax debug 2, got through a child at the root level (index %i) (%i total children), current best heuristic value is %lf (%i,%i to %i,%i)\n", i, frontier.size(), current_max, max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
   }
   
   //clean up memory from those recursive calls
@@ -258,13 +321,47 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id)
   
   if(max_move!=NULL)
   {
-    printf("dl_minimax debug 3, best move is from file, rank (%i,%i) to (%i,%i)\n", max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank);
+    printf("dl_minimax debug 2, best move is from file, rank (%i,%i) to (%i,%i) (heuristic value %lf)\n", max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank, current_max);
   }
+  
+  free_move_acc(move_accumulator);
   
   //make (read: return) the move that got us to the best position
   //(stored as Board::last_move_made in the child we chose earlier)
   //note that for memory management purposes this is a copy (made when setting max_move)
   return max_move;
+}
+
+//iterative deepening depth-limited minimax
+_Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator)
+{
+  _Move *end_move=NULL;
+  
+  //the <= here is so max_depth_limit is inclusive
+  for(int depth_limit=0; depth_limit<=max_depth_limit; depth_limit++)
+  {
+    //if this move will supercede an older iteration
+    //free the memory from before
+    if(end_move!=NULL)
+    {
+      free(end_move);
+    }
+    
+    printf("id_minimax debug 0, getting a move from dl_minimax with depth limit %i\n",depth_limit);
+    
+    //make a new move accumulator to pass to the depth-limited call
+    vector <_Move*> new_move_acc;
+    for(int n=0; n<move_accumulator.size(); n++)
+    {
+      new_move_acc.push_back(root->copy_move(move_accumulator[n]));
+    }
+    
+    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc);
+  }
+  
+  free_move_acc(move_accumulator);
+  
+  return end_move;
 }
 
 

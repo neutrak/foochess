@@ -159,8 +159,35 @@ bool AI::run()
   }
   else if(algo==ID_DLMM)
   {
-    printf("AI::run() debug 0.5, making minimax move\n");
-    move=dl_minimax(board,3,playerID());
+    printf("AI::run() debug 0.5, making id_minimax move\n");
+    
+    //make a move accumulator to start it out based on the moves their API gives us
+    //note this builds the array in reverse order to what's given
+    //because I need to push_back as I go in tree generation
+    vector<_Move*> move_accumulator;
+    for(int i=moves.size()-1; i>=0; i--)
+    {
+      _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
+      if(new_move==NULL)
+      {
+        fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
+        exit(1);
+      }
+      
+      //connection is not something we're dealing with here
+      new_move->_c=NULL;
+      new_move->id=moves[i].id();
+      new_move->fromFile=moves[i].fromFile();
+      new_move->fromRank=moves[i].fromRank();
+      new_move->toFile=moves[i].toFile();
+      new_move->toRank=moves[i].toRank();
+      new_move->promoteType=moves[i].promoteType();
+      
+      move_accumulator.push_back(new_move);
+    }
+    //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
+    
+    move=id_minimax(board,3,playerID(),move_accumulator);
   }
   
   if(move!=NULL)
