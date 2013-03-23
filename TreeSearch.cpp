@@ -3,7 +3,7 @@
 #include "TreeSearch.h"
 
 //returns a list of valid moves and creates associated children in board->children as a side-effect
-vector <_Move*> generate_moves(Board *board, int player_id)
+vector <_Move*> TreeSearch::generate_moves(Board *board, int player_id)
 {
   //the moves we'll return
   vector<_Move*> valid_moves;
@@ -72,7 +72,7 @@ vector <_Move*> generate_moves(Board *board, int player_id)
 
 //returns true if there is a stalemate caused by repeated moves
 //else false
-bool stalemate_by_repeat(vector <_Move*> move_accumulator)
+bool TreeSearch::stalemate_by_repeat(vector <_Move*> move_accumulator)
 {
   //if there weren't enough moves to /possibly/ cause a problem
   if(move_accumulator.size()<8)
@@ -106,7 +106,7 @@ bool stalemate_by_repeat(vector <_Move*> move_accumulator)
 
 //returns true if there is insufficient material to checkmate
 //otherwise false
-bool insufficient_material(Board *board, int player_id)
+bool TreeSearch::insufficient_material(Board *board, int player_id)
 {
   //a count of how many of each piece each player has
   int our_pieces[PIECE_MAX];
@@ -205,7 +205,7 @@ bool insufficient_material(Board *board, int player_id)
 }
 
 //free the memory referenced by a move accumulator vector
-void free_move_acc(vector <_Move*> move_accumulator)
+void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
 {
   for(int i=0; i<move_accumulator.size(); i++)
   {
@@ -214,7 +214,7 @@ void free_move_acc(vector <_Move*> move_accumulator)
 }
 
 //make a random [legal] move
-_Move *random_move(Board *board, int player_id)
+_Move *TreeSearch::random_move(Board *board, int player_id)
 {
   //pick a piece and a valid move set
   vector<_Move*> valid_moves=generate_moves(board, player_id);
@@ -243,7 +243,7 @@ _Move *random_move(Board *board, int player_id)
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
 //TODO: add pruning handling to this when prune is true
-double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator)
+double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator)
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
@@ -269,8 +269,7 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
 */
     
     free_move_acc(move_accumulator);
-    //no legal moves for us, failure (return worst case for this player)
-//    return (max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
+    //no legal moves for us, failure (return worst case for max player)
     return HEURISTIC_MINIMUM;
   }
   //a checkmate occurs when a player is in check and has no legal moves, so check for that
@@ -284,7 +283,7 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
     {
       delete b;
       free_move_acc(move_accumulator);
-//      return (max)? HEURISTIC_MAXIMUM : HEURISTIC_MINIMUM;
+      //best case for max player
       return HEURISTIC_MAXIMUM;
     }
     delete b;
@@ -297,25 +296,23 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
   else if((node->get_moves_since_capture()>=8 && node->get_moves_since_advancement()>=8 && stalemate_by_repeat(move_accumulator)) || (node->get_moves_since_capture()>=100 && node->get_moves_since_advancement()>=100) || insufficient_material(node,player_id))
   {
     free_move_acc(move_accumulator);
+    
+    //worst case for max player
     return HEURISTIC_MINIMUM;
   }
   //else if we hit the depth limit return the heuristic at this level
   //the < is defensive, == should work but just in case
   else if(depth_limit<=0)
   {
-    //a local player id, since for min player we want to flip this back for the purposes of heuristic value calcualtion
+    //a local player id
     int pid=player_id;
-    if(!max)
-    {
-      pid!=pid;
-    }
     
     free_move_acc(move_accumulator);
     
-//    return node->naive_points(pid); //keep ourselves alive above all else
-//    return ((node->naive_points(pid))-(node->naive_points(!pid))); //make us have a higher score than the enemy above all else
-//    return -(node->naive_points(!pid)); //kill the enemy above all else
-    return (node->naive_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+//    return node->informed_points(pid); //keep ourselves alive above all else
+//    return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
+//    return -(node->informed_points(!pid)); //kill the enemy above all else
+    return (node->informed_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
   }
   
   //if we got through that and didn't return it's determined by the other player's actions, so make some more calls
@@ -351,18 +348,18 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
   return best;
 }
 
-double dl_maxV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
+double TreeSearch::dl_maxV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
   return general_min_or_max_pruning(node, depth_limit, player_id, true, false, 0, 0, move_accumulator);
 }
 
-double dl_minV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
+double TreeSearch::dl_minV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
   return general_min_or_max_pruning(node, depth_limit, player_id, false, false, 0, 0, move_accumulator);
 }
 
 //depth-limited minimax
-_Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
@@ -436,7 +433,7 @@ _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> mo
 }
 
 //iterative deepening depth-limited minimax
-_Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator)
 {
   _Move *end_move=NULL;
   

@@ -806,8 +806,7 @@ vector<_Move*> Board::rook_moves(_SuperPiece *piece)
   //for an enemy piece, include that tile, for an owned piece, don't
   
   //save some code, re-use the rank checking for up and down
-  int direction=-1;
-  while(direction!=0)
+  for(int direction=-1; direction!=0; direction=next_direction(direction))
   {
     //check a rank
     int rank;
@@ -824,14 +823,11 @@ vector<_Move*> Board::rook_moves(_SuperPiece *piece)
       //attacking the enemy is a valid move
       valid_moves.push_back(make_move(piece, piece->file, rank, 'Q'));
     }
-    
-    direction=next_direction(direction); 
   }
   
   //same thing we did for rank, just do it for file
   //TODO: try to compress this and the rank code into one loop, may need to use a bitmask for that...
-  direction=-1;
-  while(direction!=0)
+  for(int direction=-1; direction!=0; direction=next_direction(direction))
   {
     //check a file
     int file;
@@ -848,8 +844,6 @@ vector<_Move*> Board::rook_moves(_SuperPiece *piece)
       //attacking the enemy is a valid move
       valid_moves.push_back(make_move(piece, file, piece->rank, 'Q'));
     }
-    
-    direction=next_direction(direction); 
   }
   
   return valid_moves;
@@ -879,12 +873,10 @@ vector<_Move*> Board::knight_moves(_SuperPiece *piece)
     }
     
     //the direction in which we're checking
-    int x_direction=-1;
-    while(x_direction!=0)
+    for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
     {
       x*=-1;
-      int y_direction=-1;
-      while(y_direction!=0)
+      for(int y_direction=-1; y_direction!=0; y_direction=next_direction(y_direction))
       {
         y*=-1;
         
@@ -898,11 +890,7 @@ vector<_Move*> Board::knight_moves(_SuperPiece *piece)
             valid_moves.push_back(make_move(piece, (piece->file)+x, (piece->rank)+y, 'Q'));
           }
         }
-        
-        y_direction=next_direction(y_direction);
       }
-      
-      x_direction=next_direction(x_direction);
     }
   }
   
@@ -915,11 +903,9 @@ vector<_Move*> Board::bishop_moves(_SuperPiece *piece)
   
   //diagonals, account for pieces in the way the same way rook does
   
-  int x_direction=-1;
-  while(x_direction!=0)
+  for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
   {
-    int y_direction=-1;
-    while(y_direction!=0)
+    for(int y_direction=-1; y_direction!=0; y_direction=next_direction(y_direction))
     {
       //file
       int f=(piece->file)+x_direction;
@@ -950,11 +936,7 @@ vector<_Move*> Board::bishop_moves(_SuperPiece *piece)
         f+=x_direction;
         r+=y_direction;
       }
-      
-      y_direction=next_direction(y_direction);
     }
-    
-    x_direction=next_direction(x_direction);
   }
   
   return valid_moves;
@@ -1147,9 +1129,17 @@ int Board::naive_points(int player_id)
   return acc;
 }
 
-//TODO: write the informed_points heuristic
+//TODO: improve the informed_points heuristic
 //point values with position taken into account, etc.
 int Board::informed_points(int player_id)
 {
+  if(!get_check(player_id) && get_check(!player_id))
+  {
+    return naive_points(player_id)+6;
+  }
+  else
+  {
+    return naive_points(player_id);
+  }
 }
 

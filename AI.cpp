@@ -155,7 +155,7 @@ bool AI::run()
   if(algo==RANDOM)
   {
     printf("AI::run() debug 0.5, making random move\n");
-    move=random_move(board,playerID());
+    move=TreeSearch::random_move(board,playerID());
   }
   else if(algo==ID_DLMM)
   {
@@ -187,7 +187,7 @@ bool AI::run()
     }
     //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
     
-    move=id_minimax(board,3,playerID(),move_accumulator);
+    move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator);
   }
   
   if(move!=NULL)

@@ -7,3 +7,20 @@ A few notes about this program at a high abstraction level.
   In order to count movements, the AI class stores the aforementioned "master" board throughout its life.  
 
 
+Modifications and additions for the second assignment (in response to grader feedback)
+  All types of pawn promotions are considered seperate moves (generated when the pawn is one square away from promotion)
+  I changed the castling creation code to include a check for the open square; I misunderstood when castling was valid; I thought you could just not castle as a means to get yourself out of check
+  The in_check function now starts at a known position and works outward for efficiency.  
+  
+  As far as pointers and structures
+    I had to make my own structures because those given didn't have properties like constant-time access of a piece given position, storing movement count, and adding a move to the existing move structure (because they reverse-order).  The tree therefore needed custom structures, and I re-used those in various places rather than converting to and from the existing API constantly.  
+    Pointers are in various places because the data needs to change within function calls; I understand the c++ way to do this is "pass by reference" but that's just a pointer you can't use as a pointer.  
+      Consider everywhere you see a pointer to just be pass by reference; I find it crucial to know in the calling code whether data can change during calls and explicit pointers allow this, where pass-by-reference does not.  
+
+Additional comments for the second assignment
+  The TreeSearch class implements the algorithms and has helper functions for doing so; I also moved generate_moves out of AI and into this.  
+  AI.cpp currently uses a id dlmm depth limit of 3; 4 will also complete in a reasonable time but won't necessarily get to end-game in all cases; a long game will time out with 4.  
+  The heuristic I used is weighted points; (node->informed_points(pid)*0.6)-(node->naive_points(!pid)) is the literal code.  This has the effect of trying to attack the enemy, but not making overly risky sacrifices to do so.  This will very consistently beat the random AI, but obviously I'll work improve it more.  Informed_points at the moment is just naive_points with an addition for when the enemy is in check.  
+  Since I cannot look 100 moves ahead, the 100 move stalemate still occasionally happens; it will be detected by the AI, but in some cases insufficient action can be taken to get out of it by the time it's 3 moves away.  
+
+
