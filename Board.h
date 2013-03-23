@@ -23,7 +23,6 @@ private:
   _SuperPiece *state[width*height];
   
   //whether or not the board is currently in check
-  //this will determine a few things, like whether castling is a valid move
   bool white_check;
   bool black_check;
   
@@ -31,6 +30,11 @@ private:
   _SuperPiece *last_moved;
   //and the last move applied to this board (initially NULL)
   _Move *last_move_made;
+  
+  //the number of moves since the last capture, pawn advancement (respectively)
+  //initialized to 0 in the normal constructor; carried in the copy constructor
+  int moves_since_capture;
+  int moves_since_advancement;
   
   //parent
   Board *p;
@@ -53,6 +57,8 @@ public:
   vector<Board*> get_children(){ return children; }
   _Move *get_last_move_made(){ return last_move_made; }
   bool get_check(int player_id){ return (player_id==WHITE) ? white_check : black_check; }
+  int get_moves_since_capture(){ return moves_since_capture; }
+  int get_moves_since_advancement(){ return moves_since_advancement; }
   
   //deal with other nodes in the structure
   void add_child(Board *board);

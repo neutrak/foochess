@@ -3,12 +3,28 @@
 #include "Board.h"
 #include "structures.h"
 
+typedef enum
+{
+  PAWN,
+  ROOK,
+  KNIGHT,
+  BISHOP,
+  QUEEN,
+  KING,
+  
+  PIECE_MAX
+} piece_type;
+
 //returns a list of valid moves and creates associated children in board->children as a side-effect
 vector <_Move*> generate_moves(Board *board, int player_id);
 
 //returns true if there is a stalemate caused by repeated moves
 //else false
 bool stalemate_by_repeat(vector <_Move*> move_accumulator);
+
+//returns true if there is insufficient material to checkmate
+//otherwise false
+bool insufficient_material(Board *board, int player_id);
 
 //free the memory referenced by a move accumulator vector
 void free_move_acc(vector <_Move*> move_accumulator);

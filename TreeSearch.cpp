@@ -104,6 +104,106 @@ bool stalemate_by_repeat(vector <_Move*> move_accumulator)
   return true;
 }
 
+//returns true if there is insufficient material to checkmate
+//otherwise false
+bool insufficient_material(Board *board, int player_id)
+{
+  //a count of how many of each piece each player has
+  int our_pieces[PIECE_MAX];
+  int enemy_pieces[PIECE_MAX];
+  
+  //initialize to 0
+  for(int i=0; i<PIECE_MAX; i++)
+  {
+    our_pieces[i]=0;
+    enemy_pieces[i]=0;
+  }
+  
+  int width=8;
+  int height=8;
+  
+  //find pieces, make counts!
+  for(int f=1; f<=width; f++)
+  {
+    for(int r=1; r<=height; r++)
+    {
+      if(board->get_element(f,r)!=NULL)
+      {
+        //where to index in to the chosen array (our's or the enemy's)
+        int type_index=-1;
+        
+        //increment depending on type (the returns in here save us some clock cycles)
+        switch(board->get_element(f,r)->type)
+        {
+          case 'P':
+            //if either side has a pawn there is "sufficient material"
+//            type_index=PAWN;
+            return false;
+            break;
+          case 'R':
+            //same for rooks; a rook and a king is enough to checkmate
+//            type_index=ROOK;
+            return false;
+            break;
+          case 'N':
+            type_index=KNIGHT;
+            break;
+          case 'B':
+            type_index=BISHOP;
+            break;
+          case 'Q':
+            //same for queens; a queen and a king is enough to checkmate
+//            type_index=QUEEN;
+            return false;
+            break;
+          case 'K':
+            type_index=KING;
+            break;
+        }
+        
+        if(board->get_element(f,r)->owner==player_id)
+        {
+          our_pieces[type_index]++;
+        }
+        else
+        {
+          enemy_pieces[type_index]++;
+        }
+      }
+    }
+  }
+  
+  //insufficient material conditions
+  //only kings left
+  if(our_pieces[BISHOP]==0 && our_pieces[KNIGHT]==0 && enemy_pieces[BISHOP]==0 && enemy_pieces[KNIGHT]==0)
+  {
+    return true;
+  }
+  //if we have nothing but a king and the enemy has nothing but a single bishop
+  else if(our_pieces[BISHOP]==0 && our_pieces[KNIGHT]==0 && enemy_pieces[BISHOP]==1 && enemy_pieces[KNIGHT]==0)
+  {
+    return true;
+  }
+  //same as above but for enemy and us reversed
+  else if(our_pieces[BISHOP]==1 && our_pieces[KNIGHT]==0 && enemy_pieces[BISHOP]==0 && enemy_pieces[KNIGHT]==0)
+  {
+    return true;
+  }
+  //a single knight, enemy-owned
+  else if(our_pieces[BISHOP]==0 && our_pieces[KNIGHT]==0 && enemy_pieces[BISHOP]==0 && enemy_pieces[KNIGHT]==1)
+  {
+    return true;
+  }
+  //a single knight, player-owned
+  else if(our_pieces[BISHOP]==0 && our_pieces[KNIGHT]==1 && enemy_pieces[BISHOP]==0 && enemy_pieces[KNIGHT]==0)
+  {
+    return true;
+  }
+  
+  //if we got through that and didn't return then there is sufficient material; return as such
+  return false;
+}
+
 //free the memory referenced by a move accumulator vector
 void free_move_acc(vector <_Move*> move_accumulator)
 {
@@ -189,9 +289,12 @@ double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, b
     }
     delete b;
   }
-  //else if we've repeated moves in a bad way, it's a stalemate by repeat
+  //STALEMATE CONDITION
+  //else if there hasn't been a cap or adv in a while and we've repeated moves in a bad way, it's a stalemate by repeat
+  //or if the moves haven't been repeated by we've done nothing in forever
+  //or if there's insufficient material for a checkmate
   //return with a worst-case value
-  else if(stalemate_by_repeat(move_accumulator))
+  else if((node->get_moves_since_capture()>=8 && node->get_moves_since_advancement()>=8 && stalemate_by_repeat(move_accumulator)) || (node->get_moves_since_capture()>=100 && node->get_moves_since_advancement()>=100) || insufficient_material(node,player_id))
   {
     free_move_acc(move_accumulator);
     return HEURISTIC_MINIMUM;

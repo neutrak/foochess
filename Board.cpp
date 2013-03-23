@@ -57,6 +57,8 @@ Board::Board(vector<Piece> pieces, Board *parent)
   //nothing's been moved yet
   last_moved=NULL;
   last_move_made=NULL;
+  moves_since_capture=0;
+  moves_since_advancement=0;
   
   //check if we're in check (get it?)
   _SuperPiece *white_king=find_king(WHITE);
@@ -131,6 +133,10 @@ Board::Board(Board *board)
   //nothing's been moved yet
   last_moved=NULL;
   last_move_made=NULL;
+  
+  //the move history is carried though
+  moves_since_capture=board->moves_since_capture;
+  moves_since_advancement=board->moves_since_advancement;
 }
 
 //equality check (just checks type, owner, position of pieces, not history or anything)
@@ -604,6 +610,7 @@ void Board::apply_move(_Move *move, bool update_check)
       rook=get_element(1,king->rank);
     }
     
+    //NOTE: since this cannot be a capture or pawn advancement, those variables can't get changed here
     _Move* rook_move=make_move(rook, (move->toFile)+direction, move->toRank, move->promoteType);
     apply_move(rook_move, true);
     
@@ -615,6 +622,11 @@ void Board::apply_move(_Move *move, bool update_check)
   {
     _SuperPiece *victim=get_element(move->toFile, move->toRank);
     free(victim);
+    moves_since_capture=0;
+  }
+  else
+  {
+    moves_since_capture++;
   }
   
   //NOTE: the -1 everywhere is because the API I was given 1-indexes and I try to be consistent with it where it's not impossible to do so
@@ -638,6 +650,11 @@ void Board::apply_move(_Move *move, bool update_check)
   if(moved_piece->type=='P' && (move->toRank==1 || move->toRank==8))
   {
     moved_piece->type=move->promoteType;
+    moves_since_advancement=0;
+  }
+  else
+  {
+    moves_since_advancement++;
   }
   
   //if there was a previous move there's no longer a reference here so free it
@@ -752,8 +769,7 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
   }
   
   //also account for en passant captures
-  int x_direction=-1;
-  while(x_direction!=0)
+  for(int x_direction=-1; x_direction!=0; x_direction=next_direction(x_direction))
   {
     _SuperPiece *adjacent=get_element(piece->file+x_direction, piece->rank);
     //if we can en passant in this direction
@@ -766,8 +782,6 @@ vector<_Move*> Board::pawn_moves(_SuperPiece *piece)
 //        printf("Board::pawn_moves() debug 0, made an En Passant with file offset as %i; move is (%i,%i) to (%i,%i)\n", x_direction, piece->file, piece->rank, adjacent->file, adjacent->rank+direction_coefficient);
       }
     }
-    
-    x_direction=next_direction(x_direction);
   }
   
   
