@@ -23,4 +23,9 @@ Additional comments for the second assignment
   The heuristic I used is weighted points; (node->informed_points(pid)*0.6)-(node->naive_points(!pid)) is the literal code.  This has the effect of trying to attack the enemy, but not making overly risky sacrifices to do so.  This will very consistently beat the random AI, but obviously I'll work improve it more.  Informed_points at the moment is just naive_points with an addition for when the enemy is in check.  
   Since I cannot look 100 moves ahead, the 100 move stalemate still occasionally happens; it will be detected by the AI, but in some cases insufficient action can be taken to get out of it by the time it's 3 moves away.  
 
+Modifications and additions for the third assignment (in response to grader feedback)
+  Shuffling is now done by choosing a random element to swap from those so far not checked, resulting in at most children.size() iterations to shuffle
+  Board::naive_points checks the owner of the piece and only adds when that piece is owned by the given player_id
+  the player_id and max /do/ need to be stored seperately in the TreeSearch functions, because when generating for black player, max is black; when generating for white player, max is white; and it needs to work for both
+  
 

@@ -238,15 +238,12 @@ void Board::shuffle_children()
     return;
   }
   
-  //how many times to swap a couple elements
-  int shuffle_iterations=5000;
-  
-  for(int swaps=0; swaps<shuffle_iterations; swaps++)
+  for(int swaps=0; swaps<children.size(); swaps++)
   {
-    //pick a random index in the vector
-    int first=rand()%(children.size());
-    //pick a second random index to swap with the first one
-    int second=rand()%(children.size());
+    //pick the smallest thing we haven't already swapped
+    int first=swaps;
+    //pick a second random index to swap with the first one, after the first one
+    int second=(rand()%(children.size()-swaps))+swaps;
     
     //do the swap
     //(this could be done without tmp with an xor operation, but memory isn't what we care about here)
@@ -616,6 +613,7 @@ void Board::apply_move(_Move *move, bool update_check)
     
     //then move the king by continuing after this if
   }
+  //TODO: account for en passant
   
   //free any piece that would be "captured"
   if(get_element(move->toFile, move->toRank)!=NULL)
@@ -646,16 +644,22 @@ void Board::apply_move(_Move *move, bool update_check)
   //there is now nothing where the piece previously was
   state[((move->fromRank-1)*width)+(move->fromFile-1)]=NULL;
   
-  //if it was a pawn and it got to the end, promote it! (using move->promotionType)
-  if(moved_piece->type=='P' && (move->toRank==1 || move->toRank==8))
+  //if it was a pawn
+  if(moved_piece->type=='P')
   {
-    moved_piece->type=move->promoteType;
+    //if it got to the end, promote it! (using move->promotionType)
+    if(move->toRank==1 || move->toRank==8)
+    {
+      moved_piece->type=move->promoteType;
+    }
+    //if it was any kind of pawn movement reset pawn advancement counter
     moves_since_advancement=0;
   }
   else
   {
     moves_since_advancement++;
   }
+  
   
   //if there was a previous move there's no longer a reference here so free it
   if(last_move_made!=NULL)
@@ -1088,7 +1092,7 @@ int Board::naive_points(int player_id)
     //rank
     for(int r=1; r<=height; r++)
     {
-      if(get_element(f,r)!=NULL)
+      if(get_element(f,r)!=NULL && (get_element(f,r)->owner==player_id))
       {
         switch(get_element(f,r)->type)
         {
