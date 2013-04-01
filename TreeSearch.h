@@ -3,6 +3,8 @@
 #include "Board.h"
 #include "structures.h"
 
+#define AVG(X,Y) ((X+Y)/2)
+
 typedef enum
 {
   PAWN,
@@ -44,9 +46,6 @@ public:
   //max should be true to max, false to min
   //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
   static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator);
-  
-  static double dl_maxV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator);
-  static double dl_minV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator);
   
   //depth-limited minimax
   static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator);

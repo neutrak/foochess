@@ -1092,6 +1092,7 @@ int Board::naive_points(int player_id)
     //rank
     for(int r=1; r<=height; r++)
     {
+      //if there's a piece there and we own it, count it
       if(get_element(f,r)!=NULL && (get_element(f,r)->owner==player_id))
       {
         switch(get_element(f,r)->type)

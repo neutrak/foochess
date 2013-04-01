@@ -247,34 +247,14 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
-  //note: we can't do the terminal node checks before the generate_moves call
-  //because whether it's a terminal node or not dependson move generation
+  //NOTE: we can't do the terminal node checks before the generate_moves call
+  //because whether it's a terminal node or not depends on move generation
   
   //generate children for the given node
   generate_moves(node,player_id);
   
-  //if it's an end state because we have no legal moves (draw) return the known value
-  if(node->get_children().empty())
-  {
-    //NOTE: there's no need to do a check here since we return the same in either case
-/*
-    if(node->get_check(player_id))
-    {
-      //checkmate where we lose
-    }
-    else
-    {
-      //stalemate due to no valid moves
-    }
-*/
-    
-    free_move_acc(move_accumulator);
-    //no legal moves for us, failure (return worst case for max player)
-    return HEURISTIC_MINIMUM;
-  }
-  //a checkmate occurs when a player is in check and has no legal moves, so check for that
-  //in that case it's VERY VERY GOOD for this player (otherwise fall through and recurse)
-  else if(node->get_check(!player_id))
+  //if the opponent is in checkmate, return heuristic max (for max player)
+  if(node->get_check(!player_id))
   {
     Board *b=new Board(node);
     generate_moves(b,!player_id);
@@ -283,29 +263,36 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     {
       delete b;
       free_move_acc(move_accumulator);
-      //best case for max player
-      return HEURISTIC_MAXIMUM;
+      //best case for this player
+      return max? HEURISTIC_MAXIMUM : HEURISTIC_MINIMUM;
     }
     delete b;
   }
-  //STALEMATE CONDITION
-  //else if there hasn't been a cap or adv in a while and we've repeated moves in a bad way, it's a stalemate by repeat
-  //or if the moves haven't been repeated by we've done nothing in forever
-  //or if there's insufficient material for a checkmate
-  //return with a worst-case value
-  else if((node->get_moves_since_capture()>=8 && node->get_moves_since_advancement()>=8 && stalemate_by_repeat(move_accumulator)) || (node->get_moves_since_capture()>=100 && node->get_moves_since_advancement()>=100) || insufficient_material(node,player_id))
+  //if we are in checkmate, return heuristic minimum (for max player)
+  else if(node->get_check(player_id) && node->get_children().empty())
   {
     free_move_acc(move_accumulator);
-    
-    //worst case for max player
-    return HEURISTIC_MINIMUM;
+    //worst case for this player
+    return max? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
   }
-  //else if we hit the depth limit return the heuristic at this level
-  //the < is defensive, == should work but just in case
+  //if it's a stalemate
+  else if((node->get_children().empty()) || (node->get_moves_since_capture()>=8 && node->get_moves_since_advancement()>=8 && stalemate_by_repeat(move_accumulator)) || (node->get_moves_since_capture()>=100 && node->get_moves_since_advancement()>=100) || insufficient_material(node,player_id))
+  {
+    free_move_acc(move_accumulator);
+    //this isn't great, but it's not that bad either
+//    return AVG(HEURISTIC_MINIMUM,HEURISTIC_MAXIMUM);
+    return -25;
+  }
+  //if we hit the depth limit, use the heuristic
   else if(depth_limit<=0)
   {
     //a local player id
     int pid=player_id;
+    //if the max player is not at move preserve heuristic calculation
+    if(!max)
+    {
+      pid=!pid;
+    }
     
     free_move_acc(move_accumulator);
     
@@ -346,16 +333,6 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   
   //return the best of all the worst from recursion (simulating the other player implicitly)
   return best;
-}
-
-double TreeSearch::dl_maxV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
-{
-  return general_min_or_max_pruning(node, depth_limit, player_id, true, false, 0, 0, move_accumulator);
-}
-
-double TreeSearch::dl_minV(Board *node, int depth_limit, int player_id, vector<_Move*> move_accumulator)
-{
-  return general_min_or_max_pruning(node, depth_limit, player_id, false, false, 0, 0, move_accumulator);
 }
 
 //depth-limited minimax
@@ -399,7 +376,9 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
     
     //NOTE: this section depends on the heuristic used
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
-    double heuristic=dl_minV(root->get_children()[i], depth_limit-1, player_id, new_move_acc);
+    
+    //this is a dl_minV call, using a more general function
+    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, false, 0, 0, new_move_acc);
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
