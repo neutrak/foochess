@@ -9,7 +9,7 @@ AI::AI(Connection* conn) : BaseAI(conn) {}
 
 const char* AI::username()
 {
-  return "Shell AI";
+  return "foobar bot";
 }
 
 const char* AI::password()
@@ -88,7 +88,8 @@ bool AI::run()
 {
   //an algorithm variable so we can re-use generalized code instead of losing old functionality
 //  algorithm algo=RANDOM;
-  algorithm algo=ID_DLMM;
+//  algorithm algo=ID_DLMM;
+  algorithm algo=TL_AB_ID_DLMM;
   
   Board *board=board_from_master();
   
@@ -157,10 +158,8 @@ bool AI::run()
     printf("AI::run() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,playerID());
   }
-  else if(algo==ID_DLMM)
+  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
   {
-    printf("AI::run() debug 0.5, making id_minimax move\n");
-    
     //make a move accumulator to start it out based on the moves their API gives us
     //note this builds the array in reverse order to what's given
     //because I need to push_back as I go in tree generation
@@ -187,7 +186,16 @@ bool AI::run()
     }
     //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
     
-    move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator);
+    if(algo==ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making id_minimax move\n");
+      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,false);
+    }
+    else if(algo==TL_AB_ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
+      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,true);
+    }
   }
   
   if(move!=NULL)

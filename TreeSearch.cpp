@@ -112,6 +112,10 @@ bool TreeSearch::insufficient_material(Board *board, int player_id)
   int our_pieces[PIECE_MAX];
   int enemy_pieces[PIECE_MAX];
   
+  //the color of the last bishop found for each player; white is 0, black is 1
+  int enemy_bishop_color=0;
+  int owned_bishop_color=0;
+  
   //initialize to 0
   for(int i=0; i<PIECE_MAX; i++)
   {
@@ -150,6 +154,18 @@ bool TreeSearch::insufficient_material(Board *board, int player_id)
             break;
           case 'B':
             type_index=BISHOP;
+            {
+              //if the sum of file and rank is even, this is a white square; else this is a black square
+              int color=(f+r)%2;
+              if(board->get_element(f,r)->owner==player_id)
+              {
+                owned_bishop_color=color;
+              }
+              else
+              {
+                enemy_bishop_color=color;
+              }
+            }
             break;
           case 'Q':
             //same for queens; a queen and a king is enough to checkmate
@@ -198,6 +214,15 @@ bool TreeSearch::insufficient_material(Board *board, int player_id)
   else if(our_pieces[BISHOP]==0 && our_pieces[KNIGHT]==1 && enemy_pieces[BISHOP]==0 && enemy_pieces[KNIGHT]==0)
   {
     return true;
+  }
+  //one bishop per player
+  else if(our_pieces[BISHOP]==1 && our_pieces[KNIGHT]==0 && enemy_pieces[BISHOP]==1 && enemy_pieces[KNIGHT]==0)
+  {
+    //if they're on the same color, it's a stalemate
+    if(owned_bishop_color==enemy_bishop_color)
+    {
+      return true;
+    }
   }
   
   //if we got through that and didn't return then there is sufficient material; return as such
@@ -260,7 +285,6 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-//TODO: add pruning handling to this when prune is true
 double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator)
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
@@ -326,10 +350,35 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     //NOTE: on the recursive calls we generate the moves for the /other/ player
     double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta, new_move_acc);
     
+    //when prune is true, if we got a fail low on min or fail high on max, prune
+    if(prune)
+    {
+      //fail low for min player or fail high for max player
+      if(((opponent_move<=alpha) && (!max)) || ((opponent_move>=beta) && (max)))
+      {
+        //return the fail up so that the other recursion levels can handle it accordingly
+        best=opponent_move;
+        //breaking this loop early means we won't check any more children at this level, thus "pruning" the remaining iterations/children
+        break;
+      }
+    }
+    
     //if this move is better than the current best, it's the new best
     if((max && opponent_move>best) || (!max && opponent_move<best))
     {
       best=opponent_move;
+      
+      //NOTE: if prune is not true, these values will still be set, but they won't be used for anything
+      //if I'm the max player and I have some best value, I will no longer accept anything lower than that
+      if(max)
+      {
+        alpha=best;
+      }
+      //if I'm the min player and I have some best value, I will no longer accept anything higher than that
+      else
+      {
+        beta=best;
+      }
     }
   }
   //manage memory; we won't need this any more
@@ -342,7 +391,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
@@ -353,7 +402,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
   //this is done as a side-effect of move generation
   generate_moves(root, player_id);
   
-  printf("dl_minimax debug 1, now have a board with %i children\n", root->get_children().size());
+//  printf("dl_minimax debug 1, now have a board with %i children\n", root->get_children().size());
   
   //initially, this is all the children of the root board node
   for(int i=0; i<(root->get_children()).size(); i++)
@@ -384,7 +433,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, false, 0, 0, new_move_acc);
+    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, prune, HEURISTIC_MINIMUM, HEURISTIC_MAXIMUM, new_move_acc);
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
@@ -418,7 +467,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
 }
 
 //iterative deepening depth-limited minimax
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune)
 {
   _Move *end_move=NULL;
   
@@ -441,7 +490,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
       new_move_acc.push_back(root->copy_move(move_accumulator[n]));
     }
     
-    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc);
+    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune);
   }
   
   free_move_acc(move_accumulator);

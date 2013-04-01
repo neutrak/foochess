@@ -1,23 +1,24 @@
 // In your applyMove function, you seem to neglect a few things: first, you don't take into account En Passants (when you add this functionality, don't forget to update the moves_since_capture variable!).  
 // Also, pawn advancement occurs if a pawn is moved forward (or diagonally forward), whether or not it makes it to the end.  I took off a bit from code reliability, since your code will break in some cases because of these errors.  
 
-In the insufficient_material function, there's one case you neglected: if you and your opponent both have a bishop, but they are on the same color, it is also a stalemate.  
+// In the insufficient_material function, there's one case you neglected: if you and your opponent both have a bishop, but they are on the same color, it is also a stalemate.  
 
 In your id_minimax function, keep in mind that in the future, you'll want to hang on to each move you get between iterations rather than deleting it.  
 
 // I love the idea of picking a random move among the ones with the highest utility, however, the way you do it is painfully inefficient.  If you want to shuffle the moves as you do, then you shouldn't iterate 5000 times.  Consider this: to choose the move in the 0th index, you can just pick a random index and swap it with the 0th index.  To fill the 1st index, choose a random index greater than or equal to 1, then put that in the first index.  Iterate through the size of your list in this manner.  You should only have to iterate list.size() times to shuffle a list.  
 
 // Your minimax algorithm is all sorts of messed up.  When you first call dl_minV, you don't switch the playerID, so.... that's really, really bad.  
-In fact, I don't get why you pass playerID AND the max variable; if you know one you know the other.  
+// In fact, I don't get why you pass playerID AND the max variable; if you know one you know the other.  // see README_comments on this one
 // Nor do I see the need for the dl_minV or dl_maxV functions.  
 
-In general_min_or_max_pruning(), you first check to see whether the current player can move (actually, you check to see whether the other player can move, but that will get fixed I hope).  If not, you return HEURISTIC_MINIMUM.  The comments say this is because the resulting state is in stalemate or the current player is in checkmate.  There are two things wrong with this: 
+// In general_min_or_max_pruning(), you first check to see whether the current player can move (actually, you check to see whether the other player can move, but that will get fixed I hope).  If not, you return HEURISTIC_MINIMUM.  The comments say this is because the resulting state is in stalemate or the current player is in checkmate.  There are two things wrong with this: 
 //	1.) If the player to move is your opponent, and they are in checkmate, you should return HEURISTIC_MAXIMUM, since this is a win for you.  It looks like you check this below, but that's the same thing: if your opponent is checkmating you, it's really, really bad, not good.  
 //	2.) A stalemate should by no means be as bad as a loss.  In fact it should be close to the middle (0ish).  Maybe lower, but it's way better to tie than to lose (you get .5 points for a tie, 0 for a loss, 1 for a win).  If you're losing hard, you want to force a stalemate, especially if it's impossible for you to checkmate your opponent.  
 
-On to other topics: when there's no draw or checkmate or whatever, your heuristic is awful.  You just count all the pieces, without giving weight as to whether it's your opponent's piece or your piece.  Your opponent's pieces should subtract from the return value, not add to it.  And it shouldn't depend on some parameter you pass either for playerID (like you do in informed_points() ), it should depend on YOUR playerID, since your opponent is trying to get small heuristic values.  
+// On to other topics: when there's no draw or checkmate or whatever, your heuristic is awful.  You just count all the pieces, without giving weight as to whether it's your opponent's piece or your piece.  Your opponent's pieces should subtract from the return value, not add to it.  
+// And it shouldn't depend on some parameter you pass either for playerID (like you do in informed_points() ), it should depend on YOUR playerID, since your opponent is trying to get small heuristic values.  //see README_comments
 
-Overall, your minimax algorithm looks mostly right, but your heuristic is just atrocious.  This is painfully obvious when you watch one of your games and your queens and rooks suicide on pawns.  
+// Overall, your minimax algorithm looks mostly right, but your heuristic is just atrocious.  This is painfully obvious when you watch one of your games and your queens and rooks suicide on pawns.  
 
 // Here's how your minimax should work.  
 //	First, make sure that if your opponent is in checkmate, you get HEURISTIC_MAXIMUM.  

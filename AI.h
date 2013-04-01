@@ -12,8 +12,9 @@ using namespace std;
 
 enum algorithm
 {
-  RANDOM,
-  ID_DLMM,
+  RANDOM, //random
+  ID_DLMM, //iterative-deepening depth-limited minimax
+  TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
   
   ALGO_MAX
 };

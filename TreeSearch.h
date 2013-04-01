@@ -51,10 +51,10 @@ public:
   static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator);
   
   //depth-limited minimax
-  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator);
+  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune);
   
   //iterative deepening depth-limited minimax
-  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator);
+  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune);
 };
 
 #endif
