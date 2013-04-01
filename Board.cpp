@@ -613,7 +613,23 @@ void Board::apply_move(_Move *move, bool update_check)
     
     //then move the king by continuing after this if
   }
-  //TODO: account for en passant
+  
+  //en passant handling
+  //if it's a pawn and they're moving diagonally but there's no piece at the destination, it must be an en passant
+  if((get_element(move->fromFile, move->fromRank)->type=='P') && (get_element(move->toFile, move->toRank)==NULL) && (move->toFile!=move->fromFile))
+  {
+    int file_to_capture=move->toFile;
+    int rank_to_capture=move->fromRank;
+    
+    //DEFENSIVE: this should never be null
+    if(get_element(file_to_capture,rank_to_capture)!=NULL)
+    {
+      free(get_element(file_to_capture,rank_to_capture));
+      state[((rank_to_capture-1)*width)+(file_to_capture-1)]=NULL;
+      moves_since_capture=0;
+      //moves_since_advancement is updated later (on any pawn movement), and so doesn't need to be here
+    }
+  }
   
   //free any piece that would be "captured"
   if(get_element(move->toFile, move->toRank)!=NULL)

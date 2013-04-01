@@ -213,6 +213,24 @@ void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
   }
 }
 
+//the heuristic we'll be using for minimax
+double TreeSearch::minimax_heuristic(Board *node, int player_id, bool max)
+{
+  //a local player id
+  int pid=player_id;
+  //the heuristic is always calculated with respect to the max player
+  //if the max player is not at move, calculate with respect to it anyway
+  if(!max)
+  {
+    pid=!pid;
+  }
+  
+//  return node->informed_points(pid); //keep ourselves alive above all else
+//  return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
+//  return -(node->informed_points(!pid)); //kill the enemy above all else
+  return (node->informed_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+}
+
 //make a random [legal] move
 _Move *TreeSearch::random_move(Board *board, int player_id)
 {
@@ -286,20 +304,8 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   //if we hit the depth limit, use the heuristic
   else if(depth_limit<=0)
   {
-    //a local player id
-    int pid=player_id;
-    //if the max player is not at move preserve heuristic calculation
-    if(!max)
-    {
-      pid=!pid;
-    }
-    
     free_move_acc(move_accumulator);
-    
-//    return node->informed_points(pid); //keep ourselves alive above all else
-//    return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
-//    return -(node->informed_points(!pid)); //kill the enemy above all else
-    return (node->informed_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+    return minimax_heuristic(node,player_id,max);
   }
   
   //if we got through that and didn't return it's determined by the other player's actions, so make some more calls

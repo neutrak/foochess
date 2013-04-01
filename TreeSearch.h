@@ -34,6 +34,9 @@ public:
   //free the memory referenced by a move accumulator vector
   static void free_move_acc(vector <_Move*> move_accumulator);
   
+  //the heuristic we'll be using for minimax
+  static double minimax_heuristic(Board *node, int player_id, bool max);
+  
   //make a random [legal] move
   static _Move *random_move(Board *board, int player_id);
   
