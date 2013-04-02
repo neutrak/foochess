@@ -12,6 +12,7 @@ using namespace std;
 
 enum algorithm
 {
+  USER, //let the user actually play
   RANDOM, //random
   ID_DLMM, //iterative-deepening depth-limited minimax
   TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
@@ -31,6 +32,7 @@ public:
   virtual const char* password();
   virtual void init();
   Board *board_from_master();
+  _Move *user_move(Board *board);
   virtual bool run();
   virtual void end();
 };

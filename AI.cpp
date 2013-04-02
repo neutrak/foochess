@@ -82,11 +82,48 @@ Board *AI::board_from_master()
   return board;
 }
 
+_Move *AI::user_move(Board *board)
+{
+  _Move *move=(_Move*)(malloc(sizeof(_Move)));
+  if(move==NULL)
+  {
+    fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
+    exit(1);
+  }
+  
+  move->_c=NULL;
+  move->id=0;
+  
+  do
+  {
+    printf("Waiting for a move from the user... (expected format fromFile,fromRank toFile,toRank\\n)\nmove: ");
+    fscanf(stdin,"%i,%i %i,%i", &(move->fromFile), &(move->fromRank), &(move->toFile), &(move->toRank));
+    
+    if(board->get_element(move->fromFile,move->fromRank)!=NULL && board->get_element(move->fromFile,move->fromRank)->type=='P')
+    {
+      printf("pawn detected; promoteType: ");
+//      fscanf(stdin,"%i", &(move->promoteType)); //TODO: figure out why this causes subsequent reads to be non-blocking
+      move->promoteType='Q';
+      printf("\n");
+    }
+    else
+    {
+      move->promoteType='Q';
+    }
+  }
+  //repeat getting a move until all points are within the bounds of the board
+  while(!(move->fromFile>=1 && move->fromFile<=8 && move->fromRank>=1 && move->fromRank<=8 && move->toFile>=1 && move->toFile<=8 && move->toRank>=1 && move->toRank<=8));
+  
+  printf("AI::user_move() debug 0, move is (%i,%i) to (%i,%i) with promotion type %c\n",move->fromFile,move->fromRank,move->toFile,move->toRank,move->promoteType);
+  return move;
+}
+
 //This function is called each time it is your turn.
 //Return true to end your turn, return false to ask the server for updated information.
 bool AI::run()
 {
   //an algorithm variable so we can re-use generalized code instead of losing old functionality
+//  algorithm algo=USER;
 //  algorithm algo=RANDOM;
 //  algorithm algo=ID_DLMM;
   algorithm algo=TL_AB_ID_DLMM;
@@ -153,7 +190,13 @@ bool AI::run()
   
   _Move* move=NULL;
   
-  if(algo==RANDOM)
+  //if the user is playing, get the start and end positions from stdin
+  if(algo==USER)
+  {
+    printf("AI::run() debug 0.5, making user-specified move\n");
+    move=user_move(board);
+  }
+  else if(algo==RANDOM)
   {
     printf("AI::run() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,playerID());
