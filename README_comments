@@ -29,13 +29,16 @@ Modifications and additions for the third assignment (in response to grader feed
   Shuffling is now done by choosing a random element to swap from those so far not checked, resulting in at most children.size() iterations to shuffle
   minimax flips player_id now; dl_minV and dl_maxV have been removed since their behavior is encapsulated in general_min_or_max_pruning
   Board::naive_points checks the owner of the piece and only adds when that piece is owned by the given player_id
-  stalemates are now counted at -25.0 instead of heuristic_minimum
+  stalemates are now counted at -15.0 instead of HEURISTIC_MINIMUM
   checkmates are appropriate (opponent in checkmate is best case for player at move (max value when max player is moving); player in checkmate is worst case for player at move (min value when max player is moving))
   Board::naive_points now checks piece owner, but does require the player to be known
     the player_id and max /do/ need to be stored seperately in the TreeSearch functions, because when generating for black player, max is black; when generating for white player, max is white; and it needs to work for both
     the heuristic is always calculated with regard to the max player during that tree search, but since who that max player is depends on if I'm black or white, player_id does need to be passed (along with max, which determines when it should be calculated with regards to the opposite player (when min player's actions are being predicted))
     I /could/ instead always make one player max, then start with min when doing the first call from dl_minimax when generating for min player, but depending on the heuristic this may result in different behavior when playing as black vs. white (a defensive heuristic for the max player would turn into an offensive heuristic when generating for min, and vice versa); since I do not want the AI to use a different stratagy depending on its color, I chose not to do this.  
-  The minimax algorithm does the steps exactly as described in the grader feedback comments
+  The minimax algorithm does the steps exactly as described in the grader feedback comments when it's behaving as maxV; when it's behaving as minV a few things are flipped as needed, this is done for code reusability
   The heuristic is now a seperate function in the TreeSearch class, as requested
+  
+Additional comments for the third assignment
+  there is a time_heuristic function in the TreeSearch class; I also estimated the time it would take to do another iteration within id_minimax and factored that in
   
 

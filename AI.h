@@ -8,7 +8,7 @@
 using namespace std;
 
 //if we have this number of seconds or fewer left on the clock just use random rather than timing out
-#define RANDOM_FALLBACK_TIME 8.0
+#define RANDOM_FALLBACK_TIME 20.0
 
 enum algorithm
 {
@@ -33,6 +33,8 @@ public:
   virtual void init();
   Board *board_from_master();
   _Move *user_move(Board *board);
+  //make a move depending on the algorithm in use and the time left
+  _Move *ai_move(Board *board, algorithm algo, double time_remaining);
   virtual bool run();
   virtual void end();
 };

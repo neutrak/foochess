@@ -118,6 +118,64 @@ _Move *AI::user_move(Board *board)
   return move;
 }
 
+//make a move depending on the algorithm in use and the time left
+_Move *AI::ai_move(Board *board, algorithm algo, double time_remaining)
+{
+  _Move *move=NULL;
+  
+  //if the user is playing, get the start and end positions from stdin
+  if(algo==USER)
+  {
+    printf("AI::run() debug 0.5, making user-specified move\n");
+    move=user_move(board);
+  }
+  else if(algo==RANDOM)
+  {
+    printf("AI::run() debug 0.5, making random move\n");
+    move=TreeSearch::random_move(board,playerID());
+  }
+  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
+  {
+    //make a move accumulator to start it out based on the moves their API gives us
+    //note this builds the array in reverse order to what's given
+    //because I need to push_back as I go in tree generation
+    vector<_Move*> move_accumulator;
+    for(int i=moves.size()-1; i>=0; i--)
+    {
+      _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
+      if(new_move==NULL)
+      {
+        fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
+        exit(1);
+      }
+      
+      //connection is not something we're dealing with here
+      new_move->_c=NULL;
+      new_move->id=moves[i].id();
+      new_move->fromFile=moves[i].fromFile();
+      new_move->fromRank=moves[i].fromRank();
+      new_move->toFile=moves[i].toFile();
+      new_move->toRank=moves[i].toRank();
+      new_move->promoteType=moves[i].promoteType();
+      
+      move_accumulator.push_back(new_move);
+    }
+    //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
+    
+    if(algo==ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making id_minimax move\n");
+      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,false,false,time_remaining);
+    }
+    else if(algo==TL_AB_ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
+      move=TreeSearch::id_minimax(board,4,playerID(),move_accumulator,true,true,time_remaining);
+    }
+  }
+  return move;
+}
+
 //This function is called each time it is your turn.
 //Return true to end your turn, return false to ask the server for updated information.
 bool AI::run()
@@ -163,6 +221,7 @@ bool AI::run()
       enemy_pieces.push_back(*i);
     }
   }
+  double time_remaining=0;
   
   // Looks through information about the players
   for(size_t p=0; p<players.size(); p++)
@@ -172,6 +231,8 @@ bool AI::run()
     if(players[p].id() == playerID())
     {
       cout<<" (ME)";
+      //store the time left so that we can manage it well
+      time_remaining=players[p].time();
       
       //if we're running out of time use a random move rather than timing out
       if(players[p].time() <= RANDOM_FALLBACK_TIME)
@@ -188,58 +249,8 @@ bool AI::run()
     cout<<"Last Move Was: "<<endl<<moves[0]<<endl;
   }
   
-  _Move* move=NULL;
-  
-  //if the user is playing, get the start and end positions from stdin
-  if(algo==USER)
-  {
-    printf("AI::run() debug 0.5, making user-specified move\n");
-    move=user_move(board);
-  }
-  else if(algo==RANDOM)
-  {
-    printf("AI::run() debug 0.5, making random move\n");
-    move=TreeSearch::random_move(board,playerID());
-  }
-  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
-  {
-    //make a move accumulator to start it out based on the moves their API gives us
-    //note this builds the array in reverse order to what's given
-    //because I need to push_back as I go in tree generation
-    vector<_Move*> move_accumulator;
-    for(int i=moves.size()-1; i>=0; i--)
-    {
-      _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
-      if(new_move==NULL)
-      {
-        fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
-        exit(1);
-      }
-      
-      //connection is not something we're dealing with here
-      new_move->_c=NULL;
-      new_move->id=moves[i].id();
-      new_move->fromFile=moves[i].fromFile();
-      new_move->fromRank=moves[i].fromRank();
-      new_move->toFile=moves[i].toFile();
-      new_move->toRank=moves[i].toRank();
-      new_move->promoteType=moves[i].promoteType();
-      
-      move_accumulator.push_back(new_move);
-    }
-    //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
-    
-    if(algo==ID_DLMM)
-    {
-      printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,false);
-    }
-    else if(algo==TL_AB_ID_DLMM)
-    {
-      printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,true);
-    }
-  }
+  //make a move depending on the algorithm in use and the time left
+  _Move* move=ai_move(board, algo, time_remaining);
   
   if(move!=NULL)
   {

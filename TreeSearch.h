@@ -1,5 +1,6 @@
 #ifndef TREESEARCH_H
 #define TREESEARCH_H
+#include <sys/time.h>
 #include "Board.h"
 #include "structures.h"
 
@@ -37,6 +38,9 @@ public:
   //the heuristic we'll be using for minimax
   static double minimax_heuristic(Board *node, int player_id, bool max);
   
+  //how much time to allocate to this move given the board and how much time we have left
+  static double time_heuristic(Board *board, double time_remaining);
+  
   //make a random [legal] move
   static _Move *random_move(Board *board, int player_id);
   
@@ -53,8 +57,8 @@ public:
   //depth-limited minimax
   static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune);
   
-  //iterative deepening depth-limited minimax
-  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune);
+  //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
+  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_remaining);
 };
 
 #endif
