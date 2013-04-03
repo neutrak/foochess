@@ -571,6 +571,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     
     printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
     
+    //for the moment just try the next iteration until we hit right up against allocated time then give up
 /*
     //estimate the time that will be required for the next iteration
     //and take into account whether we will possibly be able to finish another iteration
