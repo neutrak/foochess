@@ -5,6 +5,8 @@
 #include "structures.h"
 
 #define AVG(X,Y) ((X+Y)/2)
+//an out-of-bounds return code to tell when a call ran out of time
+#define OUT_OF_TIME (HEURISTIC_MINIMUM*2)
 
 typedef enum
 {
@@ -39,7 +41,7 @@ public:
   static double minimax_heuristic(Board *node, int player_id, bool max);
   
   //how much time to allocate to this move given the board and how much time we have left
-  static double time_heuristic(Board *board, double time_remaining);
+  static double time_for_this_move(Board *board, double time_remaining);
   
   //make a random [legal] move
   static _Move *random_move(Board *board, int player_id);
@@ -52,10 +54,10 @@ public:
   //those functions themselves just carefully choose the arguments to give to this
   //max should be true to max, false to min
   //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-  static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator);
+  static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used);
   
   //depth-limited minimax
-  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune);
+  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move);
   
   //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
   static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_remaining);

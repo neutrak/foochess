@@ -257,7 +257,7 @@ double TreeSearch::minimax_heuristic(Board *node, int player_id, bool max)
 }
 
 //how much time to allocate to this move given the board and how much time we have left
-double TreeSearch::time_heuristic(Board *board, double time_remaining)
+double TreeSearch::time_for_this_move(Board *board, double time_remaining)
 {
   //give us a 15% margin of error right away, just in case (defensively)
   //this means we will under-estimate the time we think we have so we don't accidentally time out
@@ -296,7 +296,7 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator)
+double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used)
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
@@ -358,8 +358,28 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     //add on the move made to get to this child
     new_move_acc.push_back(node->copy_move(node->get_children()[i]->get_last_move_made()));
     
+    //time the recursive calls so we can stop early if we run out of time
+    struct timeval start_time;
+    gettimeofday(&start_time,NULL);
+    
     //NOTE: on the recursive calls we generate the moves for the /other/ player
-    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta, new_move_acc);
+    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    
+    struct timeval end_time;
+    gettimeofday(&end_time,NULL);
+    
+    //compute the difference between start and end times and add that to the time used
+    double before=start_time.tv_sec+(start_time.tv_usec/1000000.0);
+    double after=end_time.tv_sec+(end_time.tv_usec/1000000.0);
+    time_used+=(after-before);
+    
+    //if we're out of time, return NULL (as an error code) and clean up memory
+    if((opponent_move==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
+    {
+      printf("general_min_or_max_pruning debug 2, OUT OF TIME, returning early\n");
+      best=OUT_OF_TIME;
+      break;
+    }
     
     //when prune is true, if we got a fail low on min or fail high on max, prune
     if(prune)
@@ -403,11 +423,14 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
+  
   double alpha=HEURISTIC_MINIMUM;
   double beta=HEURISTIC_MAXIMUM;
+  
+  double time_used=0;
   
   //the tree-search frontier
   std::vector<Board*> frontier;
@@ -437,16 +460,37 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
     //add on the move made to get to this child
     new_move_acc.push_back(root->copy_move(root->get_children()[i]->get_last_move_made()));
     
+    //time the recursive calls so we can stop early if we run out of time
+    struct timeval start_time;
+    gettimeofday(&start_time,NULL);
+    
     //NOTE: this section depends on the heuristic used
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, prune, alpha, beta, new_move_acc);
+    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    
+    struct timeval end_time;
+    gettimeofday(&end_time,NULL);
+    
+    double before=start_time.tv_sec+(start_time.tv_usec/1000000.0);
+    double after=end_time.tv_sec+(end_time.tv_usec/1000000.0);
+    time_used+=(after-before);
+    
+    //if we're out of time, return NULL (as an error code) and clean up memory
+    if((heuristic==OUT_OF_TIME) || time_limit && (time_used>=time_for_move))
+    {
+      printf("dl_minimax debug 1.5, OUT OF TIME, returning early\n");
+      free(max_move);
+      max_move=NULL;
+      break;
+    }
     
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
     {
       current_max=heuristic;
+      
       //as the max player we will no longer accept anything worse than what we just got
       //in the no-pruning case this value gets ignored, but it doesn't hurt to set it anyway
       alpha=current_max;
@@ -485,20 +529,13 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
   //how much time we have used so far
   double time_used=0;
   //how much time to allocate for this move
-  double time_for_move=time_heuristic(root,time_remaining);
+  double time_for_move=time_for_this_move(root,time_remaining);
   printf("id_minimax debug 0, allocating %lf seconds to this move\n",time_for_move);
   
   //the <= here is so max_depth_limit is inclusive
   //in the case we're doing a time-limited version of this we don't want to stop on max depth limit
   for(int depth_limit=0; (depth_limit<=max_depth_limit) || time_limit; depth_limit++)
   {
-    //if this move will supercede an older iteration
-    //free the memory from before
-    if(end_move!=NULL)
-    {
-      free(end_move);
-    }
-    
     printf("id_minimax debug 1, getting a move from dl_minimax with depth limit %i, prune is %s\n", depth_limit, prune? "True" : "False");
     
     //make a new move accumulator to pass to the depth-limited call
@@ -512,7 +549,19 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     struct timeval start_time;
     gettimeofday(&start_time,NULL);
     
-    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune);
+    _Move *old_move=end_move;
+    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune, time_limit, time_for_move);
+    //if a new move was successfully generated
+    if(end_move!=NULL)
+    {
+      //free the memory from before
+      free(old_move);
+    }
+    //otherwise make use of the previously generated move
+    else
+    {
+      end_move=old_move;
+    }
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -525,10 +574,10 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
     
     //estimate the time that will be required for the next iteration
-    //and take into account whether we will be able to finish another iteration
-    //if we don't think we can finish it don't bother starting it
-    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 35 as average branch factor
-    double time_for_next=35*time_used;
+    //and take into account whether we will possibly be able to finish another iteration
+    //if we don't think there's any real chance we can finish it don't bother starting it
+    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 5 as a VERY optimistic branch factor
+    double time_for_next=5*(after-before);
     
     //time limit stop loop condition (since we're not using the loop condition in the for statement)
     if(time_limit && ((time_used+time_for_next)>=time_for_move))

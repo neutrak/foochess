@@ -170,7 +170,7 @@ _Move *AI::ai_move(Board *board, algorithm algo, double time_remaining)
     else if(algo==TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=TreeSearch::id_minimax(board,4,playerID(),move_accumulator,true,true,time_remaining);
+      move=TreeSearch::id_minimax(board,0,playerID(),move_accumulator,true,true,time_remaining);
     }
   }
   return move;
