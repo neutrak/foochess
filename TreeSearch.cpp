@@ -232,7 +232,7 @@ bool TreeSearch::insufficient_material(Board *board, int player_id)
 //free the memory referenced by a move accumulator vector
 void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
 {
-  for(int i=0; i<move_accumulator.size(); i++)
+  for(size_t i=0; i<move_accumulator.size(); i++)
   {
     free(move_accumulator[i]);
   }
@@ -347,11 +347,11 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   //go through all children and find the best assuming the opponent makes good choices
   double best=(max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
   
-  for(int i=0; i<(node->get_children().size()); i++)
+  for(size_t i=0; i<(node->get_children().size()); i++)
   {
     //make a new move accumulator to pass to the recursive call
     vector <_Move*> new_move_acc;
-    for(int n=0; n<move_accumulator.size(); n++)
+    for(size_t n=0; n<move_accumulator.size(); n++)
     {
       new_move_acc.push_back(node->copy_move(move_accumulator[n]));
     }
@@ -423,14 +423,12 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move, double time_used)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
   double alpha=HEURISTIC_MINIMUM;
   double beta=HEURISTIC_MAXIMUM;
-  
-  double time_used=0;
   
   //the tree-search frontier
   std::vector<Board*> frontier;
@@ -448,12 +446,12 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
   //initially the move that got us that desired max value is null
   _Move *max_move=NULL;
   
-  //go through the frontier, find the max value of all children (which will be determined recursively)
-  for(int i=0; i<root->get_children().size(); i++)
+  //find the max value of all children (which will be determined recursively)
+  for(size_t i=0; i<root->get_children().size(); i++)
   {
     //make a new move accumulator to pass to the recursive call
     vector <_Move*> new_move_acc;
-    for(int n=0; n<move_accumulator.size(); n++)
+    for(size_t n=0; n<move_accumulator.size(); n++)
     {
       new_move_acc.push_back(root->copy_move(move_accumulator[n]));
     }
@@ -478,7 +476,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
     time_used+=(after-before);
     
     //if we're out of time, return NULL (as an error code) and clean up memory
-    if((heuristic==OUT_OF_TIME) || time_limit && (time_used>=time_for_move))
+    if((heuristic==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
     {
       printf("dl_minimax debug 1.5, OUT OF TIME, returning early\n");
       free(max_move);
@@ -540,7 +538,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     
     //make a new move accumulator to pass to the depth-limited call
     vector <_Move*> new_move_acc;
-    for(int n=0; n<move_accumulator.size(); n++)
+    for(size_t n=0; n<move_accumulator.size(); n++)
     {
       new_move_acc.push_back(root->copy_move(move_accumulator[n]));
     }
@@ -550,7 +548,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     gettimeofday(&start_time,NULL);
     
     _Move *old_move=end_move;
-    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune, time_limit, time_for_move);
+    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune, time_limit, time_for_move, time_used);
     //if a new move was successfully generated
     if(end_move!=NULL)
     {
@@ -573,6 +571,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     
     printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
     
+/*
     //estimate the time that will be required for the next iteration
     //and take into account whether we will possibly be able to finish another iteration
     //if we don't think there's any real chance we can finish it don't bother starting it
@@ -581,6 +580,8 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     
     //time limit stop loop condition (since we're not using the loop condition in the for statement)
     if(time_limit && ((time_used+time_for_next)>=time_for_move))
+*/
+    if(time_limit && (time_used>=time_for_move))
     {
       break;
     }

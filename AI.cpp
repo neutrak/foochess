@@ -257,7 +257,7 @@ bool AI::run()
     //figure out what piece that movement entails
     int piece_index=0;
     _SuperPiece *moving_piece=board->get_element(move->fromFile, move->fromRank);
-    for(int i=0; i<owned_pieces.size(); i++)
+    for(size_t i=0; i<owned_pieces.size(); i++)
     {
       if(owned_pieces[i].file()==moving_piece->file && owned_pieces[i].rank()==moving_piece->rank)
       {

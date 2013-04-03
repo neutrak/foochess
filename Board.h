@@ -62,7 +62,7 @@ public:
   
   //deal with other nodes in the structure
   void add_child(Board *board);
-  void remove_child(int index);
+  void remove_child(size_t index);
   void clear_children();
   //a helper function to randomize children (and by extension move choices)
   void shuffle_children();

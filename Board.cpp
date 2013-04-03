@@ -205,7 +205,7 @@ void Board::add_child(Board *board)
   children.push_back(board);
 }
 
-void Board::remove_child(int index)
+void Board::remove_child(size_t index)
 {
   if(index>=0 && index<children.size() && (children[index]!=NULL))
   {
@@ -238,7 +238,7 @@ void Board::shuffle_children()
     return;
   }
   
-  for(int swaps=0; swaps<children.size(); swaps++)
+  for(size_t swaps=0; swaps<children.size(); swaps++)
   {
     //pick the smallest thing we haven't already swapped
     int first=swaps;
@@ -304,10 +304,10 @@ _SuperPiece *Board::find_king(int player_id)
   _SuperPiece *king=NULL;
   
   //file
-  for(size_t f=1; f<=width; f++)
+  for(int f=1; f<=width; f++)
   {
     //rank
-    for(size_t r=1; r<=height; r++)
+    for(int r=1; r<=height; r++)
     {
       //if this is the given player's king
       if(get_element(f,r)!=NULL && get_element(f,r)->owner==player_id && get_element(f,r)->type=='K')

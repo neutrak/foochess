@@ -2,8 +2,8 @@ sources = $(wildcard *.cpp)
 headers = $(wildcard *.h)
 objects = $(sources:%.cpp=%.o)
 deps = $(sources:%.cpp=%.d)
-CFLAGS += -g
-CXXFLAGS += -g
+CFLAGS += -Wall
+CXXFLAGS += -Wall
 
 #Uncomment this line  to get a boatload of debug output.
 #CPPFLAGS = -DSHOW_NETWORK
@@ -27,7 +27,7 @@ clean:
 	$(MAKE) -C sexp clean
 
 client: $(objects) sexp/sexp.a
-	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -g -o client
+	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -Wall -o client
 
 libclient.so: libclient_network.o libclient_game.o libclient_getters.o libclient_util.o sexp/libclient_sexp.a
 	$(CXX) -shared -Wl,-soname,libclient.so $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -o libclient.so
