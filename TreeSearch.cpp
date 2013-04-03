@@ -571,18 +571,18 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     
     printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
     
-    //for the moment just try the next iteration until we hit right up against allocated time then give up
-/*
     //estimate the time that will be required for the next iteration
     //and take into account whether we will possibly be able to finish another iteration
-    //if we don't think there's any real chance we can finish it don't bother starting it
+    //if we don't think there's any real chance we can finish it don't bother starting it; this will save us some valuable play time for later
+/*
     //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 5 as a VERY optimistic branch factor
     double time_for_next=5*(after-before);
+*/
+    //the next iteration will always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
+    double time_for_next=after-before;
     
     //time limit stop loop condition (since we're not using the loop condition in the for statement)
     if(time_limit && ((time_used+time_for_next)>=time_for_move))
-*/
-    if(time_limit && (time_used>=time_for_move))
     {
       break;
     }
