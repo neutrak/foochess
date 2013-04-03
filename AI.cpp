@@ -233,12 +233,6 @@ bool AI::run()
       cout<<" (ME)";
       //store the time left so that we can manage it well
       time_remaining=players[p].time();
-      
-      //if we're running out of time use a random move rather than timing out
-      if(players[p].time() <= RANDOM_FALLBACK_TIME)
-      {
-        algo=RANDOM;
-      }
     }
     cout<<" time remaining: "<<players[p].time()<<endl;
   }
