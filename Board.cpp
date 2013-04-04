@@ -1152,15 +1152,42 @@ int Board::naive_points(int player_id)
 
 //TODO: improve the informed_points heuristic
 //point values with position taken into account, etc.
+//1 point added for pawns past center line
+//9 points added for opponent in check
 int Board::informed_points(int player_id)
 {
+  //start with naive points, then add in values for special cases
+  int point_accumulator=naive_points(player_id);
+  
+  //add one for every pawn owned past the center line
+  for(int f=1; f<=width; f++)
+  {
+    //what constitutes "past the center" depends on the player
+    int direction_coefficient=0;
+    if(player_id==WHITE)
+    {
+      direction_coefficient=1;
+    }
+    else
+    {
+      direction_coefficient=-1;
+    }
+    
+    for(int r=(player_id==WHITE)? 5 : 4; (r>=1 && r<=height); r+=direction_coefficient)
+    {
+      if(get_element(f,r)!=NULL && get_element(f,r)->owner==player_id && get_element(f,r)->type=='P')
+      {
+        point_accumulator++;
+      }
+    }
+  }
+  
+  //add in for the case the given player is checking the opponent
   if(!get_check(player_id) && get_check(!player_id))
   {
-    return naive_points(player_id)+6;
+    point_accumulator+=9;
   }
-  else
-  {
-    return naive_points(player_id);
-  }
+  
+  return point_accumulator;
 }
 

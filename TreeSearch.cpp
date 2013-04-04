@@ -253,15 +253,15 @@ double TreeSearch::minimax_heuristic(Board *node, int player_id, bool max)
 //  return node->informed_points(pid); //keep ourselves alive above all else
 //  return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
 //  return -(node->informed_points(!pid)); //kill the enemy above all else
-  return (node->informed_points(pid)*0.6)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+  return (node->informed_points(pid)*0.7)-(node->informed_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
 }
 
 //how much time to allocate to this move given the board and how much time we have left
 double TreeSearch::time_for_this_move(Board *board, double time_remaining)
 {
-  //give us a 15% margin of error right away, just in case (defensively)
+  //give us a 5% margin of error right away, just in case (defensively)
   //this means we will under-estimate the time we think we have so we don't accidentally time out
-  time_remaining*=0.85;
+  time_remaining*=0.95;
   
   //assume we have 45 moves left, distribute time evenly accordingly
   return time_remaining/45.0;
@@ -578,7 +578,8 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 5 as a VERY optimistic branch factor
     double time_for_next=5*(after-before);
 */
-    //the next iteration will always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
+    //the next iteration will almost always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
+    //this assumes no crazy amazing pruning benefits happen
     double time_for_next=after-before;
     
     //time limit stop loop condition (since we're not using the loop condition in the for statement)

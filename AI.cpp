@@ -102,9 +102,11 @@ _Move *AI::user_move(Board *board)
     if(board->get_element(move->fromFile,move->fromRank)!=NULL && board->get_element(move->fromFile,move->fromRank)->type=='P')
     {
       printf("pawn detected; promoteType: ");
-//      fscanf(stdin,"%i", &(move->promoteType)); //TODO: figure out why this causes subsequent reads to be non-blocking
+      //this temporary variable is needed because internally move->promoteType is an integer and I need to read it as a char
+      char promoteType;
+      fscanf(stdin,"%c", &promoteType); //TODO: figure out why this is non-blocking
+//      move->promoteType=promoteType;
       move->promoteType='Q';
-      printf("\n");
     }
     else
     {
