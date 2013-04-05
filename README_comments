@@ -30,5 +30,6 @@ Modifications and additions for the third assignment (in response to grader feed
   
 Additional comments for the third assignment
   there is a time_for_this_move function in the TreeSearch class; I also estimated the minimum time it would take to do another iteration within id_minimax and factored that in
+  the code commented out in AI::init() allows the user to select algorithm and heuristic at runtime; I commented it out because the input is blocking and so I didn't want to submit it to the arena like that
   
 

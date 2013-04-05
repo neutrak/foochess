@@ -17,10 +17,132 @@ const char* AI::password()
   return "password";
 }
 
+//time-limited input (timeout is in seconds)
+void AI::tl_input(char *buffer, int buffer_size, int timeout)
+{
+  //set stdin non-blocking for the moment
+//  int flags=fcntl(0, F_GETFL, 0);
+//  fcntl(0, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
+  
+  int start_time=time(NULL);
+  int index=0;
+  for(int t=time(NULL); (t-start_time)<timeout; t=time(NULL))
+  {
+    //try to read something; if there is nothing to read sleep a little then continue
+//    int bytes_read=read(0,buffer,buffer_size);
+//    scanf("%s",buffer);
+    char c=getchar();
+    
+    if(errno == EAGAIN)
+    {
+      usleep(1000);
+      continue;
+    }
+    else
+    {
+      if(c!='\n')
+      {
+        buffer[index]=c;
+        buffer[index+1]='\0';
+        index++;
+        continue;
+      }
+      
+      //null-terminate, just in case
+//      buffer[bytes_read]='\0';
+      printf("AI::tl_input() debug 0, got some input (%s)\n",buffer);
+    }
+    
+    //strip off any newlines
+    for(unsigned int i=0; i<strlen(buffer); i++)
+    {
+      if(buffer[i]=='\r' || buffer[i]=='\n')
+      {
+        buffer[i]='\0';
+      }
+    }
+    //after any valid input stop looping
+    break;
+  }
+  
+  //reset input to be blocking
+//  fcntl(0, F_SETFL, flags);
+  
+  //no return value; side-effect of buffer being updated
+}
+
 //This function is run once, before your first turn.
 void AI::init()
 {
   srand(time(NULL));
+  
+  //an algorithm variable so we can re-use generalized code instead of losing old functionality
+  //set the default
+//  algo=USER;
+//  algo=RANDOM;
+//  algo=ID_DLMM;
+  algo=TL_AB_ID_DLMM;
+  
+  heur=INFORMED_ATTACK;
+  
+/*
+  //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
+  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM): ");
+  
+  char algo_choice[512];
+  tl_input(algo_choice,512,10);
+  
+  if(!strcmp(algo_choice,"USER"))
+  {
+    algo=USER;
+  }
+  else if(!strcmp(algo_choice,"RANDOM"))
+  {
+    algo=RANDOM;
+  }
+  else if(!strcmp(algo_choice,"ID_DLMM"))
+  {
+    algo=ID_DLMM;
+  }
+  else if(!strcmp(algo_choice,"TL_AB_ID_DLMM"))
+  {
+    algo=TL_AB_ID_DLMM;
+  }
+  else
+  {
+    printf("Err: Unrecognized algorithm option, using default...\n");
+  }
+  
+  //heuristic choice
+  if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
+  {
+    printf("Enter a heuristic to use (options are INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
+    
+    char heur_choice[512];
+    tl_input(heur_choice,512,10);
+    
+    if(!strcmp(heur_choice,"INFORMED_ATTACK"))
+    {
+      heur=INFORMED_ATTACK;
+    }
+    else if(!strcmp(heur_choice,"INFORMED_DEFEND"))
+    {
+      heur=INFORMED_DEFEND;
+    }
+    else if(!strcmp(heur_choice,"NAIVE_ATTACK"))
+    {
+      heur=NAIVE_ATTACK;
+    }
+    else if(!strcmp(heur_choice,"NAIVE_DEFEND"))
+    {
+      heur=NAIVE_DEFEND;
+    }
+    else
+    {
+      printf("Err: Unrecognized heuristic option, using default...\n");
+    }
+  }
+*/
   
   //initially the master copy of the board isn't made
   master=NULL;
@@ -120,8 +242,8 @@ _Move *AI::user_move(Board *board)
   return move;
 }
 
-//make a move depending on the algorithm in use and the time left
-_Move *AI::ai_move(Board *board, algorithm algo, double time_remaining)
+//make a move depending on the algorithm (within the AI class) in use and the time left
+_Move *AI::ai_move(Board *board, double time_remaining)
 {
   _Move *move=NULL;
   
@@ -167,12 +289,12 @@ _Move *AI::ai_move(Board *board, algorithm algo, double time_remaining)
     if(algo==ID_DLMM)
     {
       printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,false,false,time_remaining);
+      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,heur,false,false,time_remaining);
     }
     else if(algo==TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=TreeSearch::id_minimax(board,0,playerID(),move_accumulator,true,true,time_remaining);
+      move=TreeSearch::id_minimax(board,0,playerID(),move_accumulator,heur,true,true,time_remaining);
     }
   }
   return move;
@@ -182,11 +304,7 @@ _Move *AI::ai_move(Board *board, algorithm algo, double time_remaining)
 //Return true to end your turn, return false to ask the server for updated information.
 bool AI::run()
 {
-  //an algorithm variable so we can re-use generalized code instead of losing old functionality
-//  algorithm algo=USER;
-//  algorithm algo=RANDOM;
-//  algorithm algo=ID_DLMM;
-  algorithm algo=TL_AB_ID_DLMM;
+  //NOTE: algorithm was set within init
   
   Board *board=board_from_master();
   
@@ -246,7 +364,7 @@ bool AI::run()
   }
   
   //make a move depending on the algorithm in use and the time left
-  _Move* move=ai_move(board, algo, time_remaining);
+  _Move* move=ai_move(board, time_remaining);
   
   if(move!=NULL)
   {

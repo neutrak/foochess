@@ -1,7 +1,7 @@
 #ifndef TREESEARCH_H
 #define TREESEARCH_H
 #include <sys/time.h>
-#include "Board.h"
+#include "AI.h"
 #include "structures.h"
 
 #define AVG(X,Y) ((X+Y)/2)
@@ -38,7 +38,10 @@ public:
   static void free_move_acc(vector <_Move*> move_accumulator);
   
   //the heuristic we'll be using for minimax
-  static double minimax_heuristic(Board *node, int player_id, bool max);
+  static double informed_attack_heuristic(Board *node, int player_id, bool max);
+  static double informed_defend_heuristic(Board *node, int player_id, bool max);
+  static double naive_attack_heuristic(Board *node, int player_id, bool max);
+  static double naive_defend_heuristic(Board *node, int player_id, bool max);
   
   //how much time to allocate to this move given the board and how much time we have left
   static double time_for_this_move(Board *board, double time_remaining);
@@ -54,13 +57,13 @@ public:
   //those functions themselves just carefully choose the arguments to give to this
   //max should be true to max, false to min
   //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-  static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used);
+  static double general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used);
   
   //depth-limited minimax
-  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move, double time_used);
+  static _Move *dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_for_move, double time_used);
   
   //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_remaining);
+  static _Move *id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_remaining);
 };
 
 #endif

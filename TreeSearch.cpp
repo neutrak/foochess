@@ -239,21 +239,41 @@ void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
 }
 
 //the heuristic we'll be using for minimax
-double TreeSearch::minimax_heuristic(Board *node, int player_id, bool max)
+double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool max)
 {
   //a local player id
-  int pid=player_id;
   //the heuristic is always calculated with respect to the max player
   //if the max player is not at move, calculate with respect to it anyway
-  if(!max)
-  {
-    pid=!pid;
-  }
+  int pid=max? player_id : !player_id;
   
 //  return node->informed_points(pid); //keep ourselves alive above all else
 //  return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
 //  return -(node->informed_points(!pid)); //kill the enemy above all else
-  return (node->informed_points(pid)*0.7)-(node->informed_points(!pid)); //kill the enemy but don't sacrifice everyting to accomplish that
+  return (node->informed_points(pid)*0.7)-(node->informed_points(!pid)); //kill the enemy but don't sacrifice everything to accomplish that
+}
+
+double TreeSearch::informed_defend_heuristic(Board *node, int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (node->informed_points(pid))-(node->informed_points(!pid)*0.7); //defend ourselves first but kill the enemy where it's convienent
+}
+
+double TreeSearch::naive_attack_heuristic(Board *node, int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (node->naive_points(pid)*0.7)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everything to accomplis that
+}
+
+double TreeSearch::naive_defend_heuristic(Board *node, int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (node->naive_points(pid))-(node->naive_points(!pid)*0.7); //defend ourselves first but kill the enemy where it's convienent
 }
 
 //how much time to allocate to this move given the board and how much time we have left
@@ -296,7 +316,7 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used)
+double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used)
 {
 //  printf("general_min_or_max_pruning debug 0, generating for player %i, depth limit %i\n", player_id, depth_limit);
   
@@ -340,7 +360,20 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   else if(depth_limit<=0)
   {
     free_move_acc(move_accumulator);
-    return minimax_heuristic(node,player_id,max);
+    //NOTE: no breaks are needed because every case returns
+    switch(heur)
+    {
+      case INFORMED_ATTACK:
+        return informed_attack_heuristic(node,player_id,max);
+      case INFORMED_DEFEND:
+        return informed_defend_heuristic(node,player_id,max);
+      case NAIVE_ATTACK:
+        return naive_attack_heuristic(node,player_id,max);
+      case NAIVE_DEFEND:
+        return naive_defend_heuristic(node,player_id,max);
+      default:
+        return informed_attack_heuristic(node,player_id,max);
+    }
   }
   
   //if we got through that and didn't return it's determined by the other player's actions, so make some more calls
@@ -363,7 +396,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     gettimeofday(&start_time,NULL);
     
     //NOTE: on the recursive calls we generate the moves for the /other/ player
-    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, !player_id, !max, heur, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -423,7 +456,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_for_move, double time_used)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_for_move, double time_used)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
@@ -466,7 +499,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, !player_id, false, heur, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -520,7 +553,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int player_id, vecto
 }
 
 //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, bool prune, bool time_limit, double time_remaining)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_remaining)
 {
   _Move *end_move=NULL;
   
@@ -532,7 +565,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
   
   //the <= here is so max_depth_limit is inclusive
   //in the case we're doing a time-limited version of this we don't want to stop on max depth limit
-  for(int depth_limit=0; (depth_limit<=max_depth_limit) || time_limit; depth_limit++)
+  for(int depth_limit=0; time_limit || (depth_limit<=max_depth_limit); depth_limit++)
   {
     printf("id_minimax debug 1, getting a move from dl_minimax with depth limit %i, prune is %s\n", depth_limit, prune? "True" : "False");
     
@@ -548,7 +581,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
     gettimeofday(&start_time,NULL);
     
     _Move *old_move=end_move;
-    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, prune, time_limit, time_for_move, time_used);
+    end_move=dl_minimax(root, depth_limit, player_id, new_move_acc, heur, prune, time_limit, time_for_move, time_used);
     //if a new move was successfully generated
     if(end_move!=NULL)
     {
