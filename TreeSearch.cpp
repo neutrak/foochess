@@ -277,14 +277,26 @@ double TreeSearch::naive_defend_heuristic(Board *node, int player_id, bool max)
 }
 
 //how much time to allocate to this move given the board and how much time we have left
-double TreeSearch::time_for_this_move(Board *board, double time_remaining)
+double TreeSearch::time_for_this_move(Board *board, double time_remaining, int moves_made)
 {
   //give us a 5% margin of error right away, just in case (defensively)
   //this means we will under-estimate the time we think we have so we don't accidentally time out
   time_remaining*=0.95;
   
-  //assume we have 45 moves left, distribute time evenly accordingly
-  return time_remaining/45.0;
+  double time_for_move;
+  
+  //if we're already well into the game, assume fewer moves left before end
+  if(moves_made>50)
+  {
+    time_for_move=time_remaining/40.0;
+  }
+  else
+  {
+    //assume we have 60 moves left, distribute time evenly accordingly
+    time_for_move=time_remaining/60.0;
+  }
+  
+  return time_for_move;
 }
 
 //make a random [legal] move
@@ -560,7 +572,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int player_id, v
   //how much time we have used so far
   double time_used=0;
   //how much time to allocate for this move
-  double time_for_move=time_for_this_move(root,time_remaining);
+  double time_for_move=time_for_this_move(root,time_remaining, move_accumulator.size());
   printf("id_minimax debug 0, allocating %lf seconds to this move\n",time_for_move);
   
   //the <= here is so max_depth_limit is inclusive

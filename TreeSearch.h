@@ -44,7 +44,7 @@ public:
   static double naive_defend_heuristic(Board *node, int player_id, bool max);
   
   //how much time to allocate to this move given the board and how much time we have left
-  static double time_for_this_move(Board *board, double time_remaining);
+  static double time_for_this_move(Board *board, double time_remaining, int moves_made);
   
   //make a random [legal] move
   static _Move *random_move(Board *board, int player_id);
