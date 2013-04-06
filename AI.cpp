@@ -18,57 +18,33 @@ const char* AI::password()
 }
 
 //time-limited input (timeout is in seconds)
-void AI::tl_input(char *buffer, int buffer_size, int timeout)
+//returns true when input is recieved, false otherwise
+bool AI::tl_input(char *buffer, int buffer_size, int timeout)
 {
-  //set stdin non-blocking for the moment
-//  int flags=fcntl(0, F_GETFL, 0);
-//  fcntl(0, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
+  struct pollfd fd={STDIN_FILENO, POLLRDNORM, 0};
   
-  int start_time=time(NULL);
-  int index=0;
-  for(int t=time(NULL); (t-start_time)<timeout; t=time(NULL))
+  //poll takes timeout in milliseconds, so we multiply by 1000 here
+  poll(&fd, 1, timeout*(1000));
+  if(fd.revents & POLLRDNORM)
   {
-    //try to read something; if there is nothing to read sleep a little then continue
-//    int bytes_read=read(0,buffer,buffer_size);
-//    scanf("%s",buffer);
-    char c=getchar();
+    bool success=(read(STDIN_FILENO, buffer, buffer_size) > 0);
     
-    if(errno == EAGAIN)
+    if(success)
     {
-      usleep(1000);
-      continue;
-    }
-    else
-    {
-      if(c!='\n')
+      //consider any newlines as termination
+      for(unsigned int i=0; i<strlen(buffer); i++)
       {
-        buffer[index]=c;
-        buffer[index+1]='\0';
-        index++;
-        continue;
-      }
-      
-      //null-terminate, just in case
-//      buffer[bytes_read]='\0';
-      printf("AI::tl_input() debug 0, got some input (%s)\n",buffer);
-    }
-    
-    //strip off any newlines
-    for(unsigned int i=0; i<strlen(buffer); i++)
-    {
-      if(buffer[i]=='\r' || buffer[i]=='\n')
-      {
-        buffer[i]='\0';
+        if(buffer[i]=='\r' || buffer[i]=='\n')
+        {
+          buffer[i]='\0';
+        }
       }
     }
-    //after any valid input stop looping
-    break;
+    
+    return success;
   }
   
-  //reset input to be blocking
-//  fcntl(0, F_SETFL, flags);
-  
-  //no return value; side-effect of buffer being updated
+  return false;
 }
 
 //This function is run once, before your first turn.
@@ -85,64 +61,74 @@ void AI::init()
   
   heur=INFORMED_ATTACK;
   
-/*
   //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
   printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM): ");
+  fflush(stdout);
   
   char algo_choice[512];
-  tl_input(algo_choice,512,10);
-  
-  if(!strcmp(algo_choice,"USER"))
+  if(tl_input(algo_choice,512,10))
   {
-    algo=USER;
-  }
-  else if(!strcmp(algo_choice,"RANDOM"))
-  {
-    algo=RANDOM;
-  }
-  else if(!strcmp(algo_choice,"ID_DLMM"))
-  {
-    algo=ID_DLMM;
-  }
-  else if(!strcmp(algo_choice,"TL_AB_ID_DLMM"))
-  {
-    algo=TL_AB_ID_DLMM;
+    if(!strcmp(algo_choice,"USER"))
+    {
+      algo=USER;
+    }
+    else if(!strcmp(algo_choice,"RANDOM"))
+    {
+      algo=RANDOM;
+    }
+    else if(!strcmp(algo_choice,"ID_DLMM"))
+    {
+      algo=ID_DLMM;
+    }
+    else if(!strcmp(algo_choice,"TL_AB_ID_DLMM"))
+    {
+      algo=TL_AB_ID_DLMM;
+    }
+    else
+    {
+      printf("Err: Unrecognized algorithm option (%s), using default...\n",algo_choice);
+    }
   }
   else
   {
-    printf("Err: Unrecognized algorithm option, using default...\n");
+    printf("\nInput timed out, assuming default...\n");
   }
   
   //heuristic choice
   if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
   {
     printf("Enter a heuristic to use (options are INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
+    fflush(stdout);
     
     char heur_choice[512];
-    tl_input(heur_choice,512,10);
-    
-    if(!strcmp(heur_choice,"INFORMED_ATTACK"))
+    if(tl_input(heur_choice,512,10))
     {
-      heur=INFORMED_ATTACK;
-    }
-    else if(!strcmp(heur_choice,"INFORMED_DEFEND"))
-    {
-      heur=INFORMED_DEFEND;
-    }
-    else if(!strcmp(heur_choice,"NAIVE_ATTACK"))
-    {
-      heur=NAIVE_ATTACK;
-    }
-    else if(!strcmp(heur_choice,"NAIVE_DEFEND"))
-    {
-      heur=NAIVE_DEFEND;
+      if(!strcmp(heur_choice,"INFORMED_ATTACK"))
+      {
+        heur=INFORMED_ATTACK;
+      }
+      else if(!strcmp(heur_choice,"INFORMED_DEFEND"))
+      {
+        heur=INFORMED_DEFEND;
+      }
+      else if(!strcmp(heur_choice,"NAIVE_ATTACK"))
+      {
+        heur=NAIVE_ATTACK;
+      }
+      else if(!strcmp(heur_choice,"NAIVE_DEFEND"))
+      {
+        heur=NAIVE_DEFEND;
+      }
+      else
+      {
+        printf("Err: Unrecognized heuristic option (%s), using default...\n",heur_choice);
+      }
     }
     else
     {
-      printf("Err: Unrecognized heuristic option, using default...\n");
+      printf("\nInput timed out, assuming default...\n");
     }
   }
-*/
   
   //initially the master copy of the board isn't made
   master=NULL;

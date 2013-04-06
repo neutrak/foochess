@@ -6,8 +6,7 @@
 #include <cstdlib>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <poll.h>
 #include "Board.h"
 using namespace std;
 
@@ -46,7 +45,8 @@ public:
   virtual const char* username();
   virtual const char* password();
   //time-limited input (timeout is in seconds)
-  void tl_input(char *buffer, int buffer_size, int timeout);
+  //returns true when input is recieved, false otherwise
+  bool tl_input(char *buffer, int buffer_size, int timeout);
   virtual void init();
   Board *board_from_master();
   _Move *user_move(Board *board);

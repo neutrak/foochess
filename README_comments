@@ -31,8 +31,8 @@ Modifications and additions for the third assignment (in response to grader feed
 Additional comments for the third assignment
   there is a time_for_this_move function in the TreeSearch class; I also estimated the minimum time it would take to do another iteration within id_minimax and factored that in
   minimax returns early from recursive calls as soon as it runs out of time
-  the code commented out in AI::init() allows the user to select algorithm and heuristic at runtime; I commented it out because the input is blocking and so I didn't want to submit it to the arena like that
-    I did however encode multiple heuristics and if I can get the input working satisfactorally to play one against the other I'd like to apply for that bonus
+  there is a prompt for user-specified algorithm and heuristic use, with a timeout in case the code is run on the arena
+    I AM APPLYING FOR THE MULTIPLE HEURISTICS BONUS FOR THIS ASSIGNMENT ON THIS BASIS
   because the algorithm doesn't distinguish between checkmates at different levels, the bot may choose to go for a checkmate several moves ahead when an immediate one is available
     I can add a check for this in id_minimax to stop as soon as one valid checkmate is found instead of continuing onto the next depth, but the algorithm didn't specify it so I didn't to be consistent with what the assignment was asking
     when I enter the tournament I plan to add this check
