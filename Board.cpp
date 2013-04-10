@@ -1023,7 +1023,6 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
         if(!in_check(piece->file+1, piece->rank, piece->owner))
         {
           valid_moves.push_back(make_move(piece, (piece->file)+2, piece->rank, 'Q'));
-//          printf("Board::king_moves() debug 0, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file+2, piece->rank);
         }
       }
       //someone was there that shouldn't have been; break prematurely
@@ -1042,7 +1041,6 @@ vector<_Move*> Board::king_moves(_SuperPiece *piece)
         if(!in_check(piece->file-1, piece->rank, piece->owner))
         {
           valid_moves.push_back(make_move(piece, (piece->file)-2, piece->rank, 'Q'));
-//          printf("Board::king_moves() debug 1, made a Castle; move is (%i,%i) to (%i,%i)\n", piece->file, piece->rank, piece->file-2, piece->rank);
         }
       }
       //someone was there that shouldn't have been; break prematurely
@@ -1133,10 +1131,7 @@ int Board::naive_points(int player_id)
           case 'Q':
             acc+=9;
             break;
-          //a king is by far the most valuable thing to get
-          case 'K':
-            acc+=9;
-            break;
+          //NOTE: kings are ignored; they are always on the board
           //DEFENSIVE: if we don't know what type it is just ignore it
           default:
             acc+=0;
@@ -1182,12 +1177,31 @@ int Board::informed_points(int player_id)
     }
   }
   
+  //TODO: add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
+  //TODO: add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
+  
   //add in for the case the given player is checking the opponent
-  if(!get_check(player_id) && get_check(!player_id))
+  //NOTE: the player_id player cannot end a move with itself in check, so we don't need to verify they aren't in check
+  if(get_check(!player_id))
   {
     point_accumulator+=9;
   }
   
   return point_accumulator;
 }
+
+//returns true if this board state is "quiescent"; else false
+bool Board::quiescent()
+{
+  //a state that includes a check is not quiescent
+  if(get_check(WHITE) || get_check(BLACK))
+  {
+    return false;
+  }
+  
+  //if none of the conditions for non-quiescent states were met, this /is/ a quiescent state
+  return true;
+}
+
+
 

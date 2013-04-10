@@ -121,6 +121,9 @@ public:
   
   //point values with position taken into account, etc.
   int informed_points(int player_id);
+  
+  //returns true if this board state is "quiescent"; else false
+  bool quiescent();
 };
 
 #endif

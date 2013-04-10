@@ -16,6 +16,7 @@ enum algorithm
   RANDOM, //random
   ID_DLMM, //iterative-deepening depth-limited minimax
   TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
+  HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
   
   ALGO_COUNT
 };

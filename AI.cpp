@@ -57,12 +57,13 @@ void AI::init()
 //  algo=USER;
 //  algo=RANDOM;
 //  algo=ID_DLMM;
-  algo=TL_AB_ID_DLMM;
+//  algo=TL_AB_ID_DLMM;
+  algo=HT_QS_TL_AB_ID_DLMM;
   
   heur=INFORMED_ATTACK;
   
   //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
-  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM): ");
+  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM): ");
   fflush(stdout);
   
   char algo_choice[512];
@@ -84,6 +85,10 @@ void AI::init()
     {
       algo=TL_AB_ID_DLMM;
     }
+    else if(!strcmp(algo_choice,"HT_QS_TL_AB_ID_DLMM"))
+    {
+      algo=HT_QS_TL_AB_ID_DLMM;
+    }
     else
     {
       printf("Err: Unrecognized algorithm option (%s), using default...\n",algo_choice);
@@ -95,7 +100,7 @@ void AI::init()
   }
   
   //heuristic choice
-  if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
+  if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
   {
     printf("Enter a heuristic to use (options are INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
     fflush(stdout);
@@ -244,7 +249,7 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     printf("AI::run() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,playerID());
   }
-  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM)
+  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
   {
     //make a move accumulator to start it out based on the moves their API gives us
     //note this builds the array in reverse order to what's given
@@ -272,15 +277,23 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     }
     //NOTE: the move_accumulator entries are free'd during recursive calls, and so don't need to be here
     
+    TreeSearch ts;
+    
+    //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
     if(algo==ID_DLMM)
     {
       printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=TreeSearch::id_minimax(board,3,playerID(),move_accumulator,heur,false,false,time_remaining);
+      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,time_remaining);
     }
     else if(algo==TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=TreeSearch::id_minimax(board,0,playerID(),move_accumulator,heur,true,true,time_remaining);
+      move=ts.id_minimax(board,0,0,playerID(),move_accumulator,heur,true,true,time_remaining);
+    }
+    else if(algo==HT_QS_TL_AB_ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making history table quiescent-search time-limited alpha-beta pruned id minimax move\n");
+      move=ts.id_minimax(board,0,4,playerID(),move_accumulator,heur,true,true,time_remaining);
     }
   }
   return move;

@@ -13,28 +13,19 @@ Additional comments for the second assignment
   The heuristic I used is weighted points; (node->informed_points(pid)*0.6)-(node->naive_points(!pid)) is the literal code.  This has the effect of trying to attack the enemy, but not making overly risky sacrifices to do so.  This will very consistently beat the random AI, but obviously I'll work improve it more.  Informed_points at the moment is just naive_points with an addition for when the enemy is in check.  
   Since I cannot look 100 moves ahead, the 100 move stalemate still occasionally happens; it will be detected by the AI, but in some cases insufficient action can be taken to get out of it by the time it's 3 moves away.  
 
-Modifications and additions for the third assignment (in response to grader feedback)
-  Board::apply_move now accounts for en passants and updates appropriate variables; also reset moves_since_advancement on /any/ pawn movement.  
-  TreeSearch::insufficient_material now accounts for each player having one bishop, and those being on the same color
-  Shuffling is now done by choosing a random element to swap from those so far not checked, resulting in at most children.size() iterations to shuffle
-  minimax flips player_id now; dl_minV and dl_maxV have been removed since their behavior is encapsulated in general_min_or_max_pruning
-  Board::naive_points checks the owner of the piece and only adds when that piece is owned by the given player_id
-  stalemates are now counted at -15.0 instead of HEURISTIC_MINIMUM
-  checkmates are appropriate (opponent in checkmate is best case for player at move (max value when max player is moving); player in checkmate is worst case for player at move (min value when max player is moving))
-  Board::naive_points now checks piece owner, but does require the player to be known
-    the player_id and max /do/ need to be stored seperately in the TreeSearch functions, because when the bot is black player, max is black; when the bot is white player, max is white; and it needs to work for both
-    the heuristic is always calculated with regard to the max player during that tree search, but since who that max player is depends on if I'm black or white, player_id does need to be passed (along with max, which determines when it should be calculated with regards to the opposite player (when min player's actions are being predicted))
-    I /could/ instead always make one color max, then start with min when doing the first call from dl_minimax when generating for min color, but depending on the heuristic this may result in different behavior when playing as black vs. white (a defensive heuristic for the max player would turn into an offensive heuristic when generating for min, and vice versa); since I do not want the AI to use a different stratagy depending on its color, I chose not to do this.  
-  The minimax algorithm does the steps exactly as described in the grader feedback comments when it's behaving as maxV; when it's behaving as minV a few things are flipped as needed, this is done for code reusability
-  The heuristic is now a seperate function in the TreeSearch class, as requested
-  
 Additional comments for the third assignment
   there is a time_for_this_move function in the TreeSearch class; I also estimated the minimum time it would take to do another iteration within id_minimax and factored that in
   minimax returns early from recursive calls as soon as it runs out of time
   there is a prompt for user-specified algorithm and heuristic use, with a timeout in case the code is run on the arena
-    I AM APPLYING FOR THE MULTIPLE HEURISTICS BONUS FOR THIS ASSIGNMENT ON THIS BASIS
   because the algorithm doesn't distinguish between checkmates at different levels, the bot may choose to go for a checkmate several moves ahead when an immediate one is available
     I can add a check for this in id_minimax to stop as soon as one valid checkmate is found instead of continuing onto the next depth, but the algorithm didn't specify it so I didn't to be consistent with what the assignment was asking
     when I enter the tournament I plan to add this check
-  
+
+
+Modifications and additions for the fourth assignment (in response to grader feedback)
+  I removed the check for opponent in checkmate when opponent isn't at move in the general minimax function, as requested
+  I removed the king count from naive_points, and by extension informed_points
+
+Additional comments for the fourth assignment
+  non-quiescent search is done by setting the quiescent depth limit to 0, rather than another boolean argument
 
