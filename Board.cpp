@@ -1094,11 +1094,38 @@ vector<_Move*> Board::legal_moves(_SuperPiece *piece)
   return valid_moves;
 }
 
+//the value of a given type of piece
+double Board::point_value(int type)
+{
+  switch(type)
+  {
+    //pawns are worth 1
+    case 'P':
+      return 1;
+    //knights are worth 3
+    case 'N':
+      return 3;
+    //bishops are worth 3
+    case 'B':
+      return 3;
+    //rooks are worth 5
+    case 'R':
+      return 5;
+    //queens are worth 9
+    case 'Q':
+      return 9;
+    //NOTE: kings are ignored; they are always on the board
+    //DEFENSIVE: if we don't know what type it is just ignore it
+    default:
+      return 0;
+  }
+}
+
 //just point values as commonly defined
-int Board::naive_points(int player_id)
+double Board::naive_points(int player_id)
 {
   //accumulator, 0 until we find our pieces
-  register int acc=0;
+  register double acc=0;
   
   //file
   for(int f=1; f<=width; f++)
@@ -1109,34 +1136,7 @@ int Board::naive_points(int player_id)
       //if there's a piece there and we own it, count it
       if(get_element(f,r)!=NULL && (get_element(f,r)->owner==player_id))
       {
-        switch(get_element(f,r)->type)
-        {
-          //pawns are worth 1
-          case 'P':
-            acc+=1;
-            break;
-          //knights are worth 3
-          case 'N':
-            acc+=3;
-            break;
-          //bishops are worth 3
-          case 'B':
-            acc+=3;
-            break;
-          //rooks are worth 5
-          case 'R':
-            acc+=5;
-            break;
-          //queens are worth 9
-          case 'Q':
-            acc+=9;
-            break;
-          //NOTE: kings are ignored; they are always on the board
-          //DEFENSIVE: if we don't know what type it is just ignore it
-          default:
-            acc+=0;
-            break;
-        }
+        acc+=point_value(get_element(f,r)->type);
       }
     }
   }
@@ -1149,10 +1149,10 @@ int Board::naive_points(int player_id)
 //point values with position taken into account, etc.
 //1 point added for pawns past center line
 //9 points added for opponent in check
-int Board::informed_points(int player_id)
+double Board::informed_points(int player_id)
 {
   //start with naive points, then add in values for special cases
-  int point_accumulator=naive_points(player_id);
+  double point_accumulator=naive_points(player_id);
   
   //add one for every pawn owned past the center line
   for(int f=1; f<=width; f++)
@@ -1172,13 +1172,31 @@ int Board::informed_points(int player_id)
     {
       if(get_element(f,r)!=NULL && get_element(f,r)->owner==player_id && get_element(f,r)->type=='P')
       {
-        point_accumulator++;
+        point_accumulator+=1;
       }
     }
   }
   
-  //TODO: add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
-  //TODO: add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
+  for(int f=1; f<=width; f++)
+  {
+    for(int r=1; r<=height; r++)
+    {
+      //if our own pieces can attack this (the enemy would be in check were their king here)
+      if(get_element(f,r)!=NULL && in_check(f,r,!player_id))
+      {
+        //add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
+        if(get_element(f,r)->owner==player_id)
+        {
+          point_accumulator+=(point_value(get_element(f,r)->type)/5);
+        }
+        //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
+        else
+        {
+          point_accumulator+=(point_value(get_element(f,r)->type)/5);
+        }
+      }
+    }
+  }
   
   //add in for the case the given player is checking the opponent
   //NOTE: the player_id player cannot end a move with itself in check, so we don't need to verify they aren't in check

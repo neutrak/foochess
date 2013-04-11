@@ -116,11 +116,14 @@ public:
   
   //common heuristics and/or helpers for tree search
   
+  //the value of a given type of piece
+  double point_value(int type);
+  
   //just point values as commonly defined
-  int naive_points(int player_id);
+  double naive_points(int player_id);
   
   //point values with position taken into account, etc.
-  int informed_points(int player_id);
+  double informed_points(int player_id);
   
   //returns true if this board state is "quiescent"; else false
   bool quiescent();
