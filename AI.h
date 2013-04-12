@@ -23,6 +23,7 @@ enum algorithm
 
 enum heuristic
 {
+  INFORMED_DANGER, //informed_points with some flags set, should add for "safe" owned pieces and "unsafe" enemy pieces
   INFORMED_ATTACK, //informed_points base, weight capture of enemy pieces above preservation of own pieces
   INFORMED_DEFEND, //informed_points base, weight preservation of own pieces above capture of enemy pieces
   NAIVE_ATTACK, //naive_points base, weight capture more

@@ -123,7 +123,7 @@ public:
   double naive_points(int player_id);
   
   //point values with position taken into account, etc.
-  double informed_points(int player_id);
+  double informed_points(int player_id, bool attack_ability);
   
   //returns true if this board state is "quiescent"; else false
   bool quiescent();

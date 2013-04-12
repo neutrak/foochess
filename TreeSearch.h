@@ -40,7 +40,8 @@ public:
   //free the memory referenced by a move accumulator vector
   static void free_move_acc(vector <_Move*> move_accumulator);
   
-  //the heuristic we'll be using for minimax
+  //the heuristics we'll be using for minimax
+  static double informed_danger_heuristic(Board *node, int player_id, bool max);
   static double informed_attack_heuristic(Board *node, int player_id, bool max);
   static double informed_defend_heuristic(Board *node, int player_id, bool max);
   static double naive_attack_heuristic(Board *node, int player_id, bool max);

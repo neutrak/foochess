@@ -21,6 +21,10 @@ const char* AI::password()
 //returns true when input is recieved, false otherwise
 bool AI::tl_input(char *buffer, int buffer_size, int timeout)
 {
+  //initially the input buffer should be empty (just in case it isn't)
+  bzero(buffer,buffer_size);
+  buffer[0]='\0';
+  
   struct pollfd fd={STDIN_FILENO, POLLRDNORM, 0};
   
   //poll takes timeout in milliseconds, so we multiply by 1000 here
@@ -60,7 +64,7 @@ void AI::init()
 //  algo=TL_AB_ID_DLMM;
   algo=HT_QS_TL_AB_ID_DLMM;
   
-  heur=INFORMED_ATTACK;
+  heur=INFORMED_DANGER;
   
   //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
   printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM): ");
@@ -102,13 +106,17 @@ void AI::init()
   //heuristic choice
   if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
   {
-    printf("Enter a heuristic to use (options are INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
+    printf("Enter a heuristic to use (options are INFORMED_DANGER, INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
     fflush(stdout);
     
     char heur_choice[512];
     if(tl_input(heur_choice,512,10))
     {
-      if(!strcmp(heur_choice,"INFORMED_ATTACK"))
+      if(!strcmp(heur_choice,"INFORMED_DANGER"))
+      {
+        heur=INFORMED_DANGER;
+      }
+      else if(!strcmp(heur_choice,"INFORMED_ATTACK"))
       {
         heur=INFORMED_ATTACK;
       }

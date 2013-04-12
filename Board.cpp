@@ -1148,8 +1148,11 @@ double Board::naive_points(int player_id)
 //TODO: improve the informed_points heuristic
 //point values with position taken into account, etc.
 //1 point added for pawns past center line
+//a value proportional to the points value of a piece found is added if we are capable of attacking it
+//  in the case this is our own piece, we are able to capture anything that attacks it one move later
+//  in the case this is an enemy piece, we are able to capture it
 //9 points added for opponent in check
-double Board::informed_points(int player_id)
+double Board::informed_points(int player_id, bool attack_ability)
 {
   //start with naive points, then add in values for special cases
   double point_accumulator=naive_points(player_id);
@@ -1177,27 +1180,31 @@ double Board::informed_points(int player_id)
     }
   }
   
-  for(int f=1; f<=width; f++)
+  //positioning is accounted for based on attack ability
+  if(attack_ability)
   {
-    for(int r=1; r<=height; r++)
+    for(int f=1; f<=width; f++)
     {
-      //if our own pieces can attack this (the enemy would be in check were their king here)
-      if(get_element(f,r)!=NULL && in_check(f,r,!player_id))
+      for(int r=1; r<=height; r++)
       {
-        //add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
-        if(get_element(f,r)->owner==player_id)
+        //if our own pieces can attack this (the enemy would be in check were their king here)
+        if(get_element(f,r)!=NULL && in_check(f,r,!player_id))
         {
-          point_accumulator+=(point_value(get_element(f,r)->type)/5);
-        }
-        //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
-        else
-        {
-          point_accumulator+=(point_value(get_element(f,r)->type)/5);
+          //add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
+          if(get_element(f,r)->owner==player_id)
+          {
+            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+          }
+          //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
+          else
+          {
+            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+          }
         }
       }
     }
   }
-  
+    
   //add in for the case the given player is checking the opponent
   //NOTE: the player_id player cannot end a move with itself in check, so we don't need to verify they aren't in check
   if(get_check(!player_id))

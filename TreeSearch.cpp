@@ -238,7 +238,16 @@ void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
   }
 }
 
-//the heuristic we'll be using for minimax
+//the heuristics we'll be using for minimax
+
+double TreeSearch::informed_danger_heuristic(Board *node, int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (node->informed_points(pid,true))-(node->informed_points(!pid,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
+}
+
 double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool max)
 {
   //a local player id
@@ -246,10 +255,10 @@ double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool ma
   //if the max player is not at move, calculate with respect to it anyway
   int pid=max? player_id : !player_id;
   
-//  return node->informed_points(pid); //keep ourselves alive above all else
-//  return ((node->informed_points(pid))-(node->informed_points(!pid))); //make us have a higher score than the enemy above all else
-//  return -(node->informed_points(!pid)); //kill the enemy above all else
-  return (node->informed_points(pid)*0.7)-(node->informed_points(!pid)); //kill the enemy but don't sacrifice everything to accomplish that
+//  return node->informed_points(pid,true); //keep ourselves alive above all else
+//  return ((node->informed_points(pid,true))-(node->informed_points(!pid,true))); //make us have a higher score than the enemy above all else
+//  return -(node->informed_points(!pid,true)); //kill the enemy above all else
+  return (node->informed_points(pid,false)*0.7)-(node->informed_points(!pid,false)); //kill the enemy but don't sacrifice everything to accomplish that
 }
 
 double TreeSearch::informed_defend_heuristic(Board *node, int player_id, bool max)
@@ -257,7 +266,7 @@ double TreeSearch::informed_defend_heuristic(Board *node, int player_id, bool ma
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->informed_points(pid))-(node->informed_points(!pid)*0.7); //defend ourselves first but kill the enemy where it's convienent
+  return (node->informed_points(pid,false))-(node->informed_points(!pid,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
 }
 
 double TreeSearch::naive_attack_heuristic(Board *node, int player_id, bool max)
@@ -360,6 +369,8 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     //NOTE: no breaks are needed because every case returns
     switch(heur)
     {
+      case INFORMED_DANGER:
+        return informed_danger_heuristic(node,player_id,max);
       case INFORMED_ATTACK:
         return informed_attack_heuristic(node,player_id,max);
       case INFORMED_DEFEND:
@@ -622,6 +633,23 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     if(time_limit && ((time_used+time_for_next)>=time_for_move))
     {
       break;
+    }
+    
+    //if this move is a guaranteed checkmate, then don't bother trying any more
+    if(end_move!=NULL)
+    {
+      Board *b=new Board(root);
+      b->apply_move(b->copy_move(end_move),true);
+      if(b->get_check(!player_id))
+      {
+        generate_moves(b,!player_id);
+        if(b->get_children().empty())
+        {
+          delete b;
+          break;
+        }
+      }
+      delete b;
     }
   }
   
