@@ -63,6 +63,8 @@ vector <_Move*> TreeSearch::generate_moves(Board *board, int player_id)
     }
   }
   
+  //TODO: when a history table is being used, order children by history table values
+  
   //board->shuffle_children randomizes children (created by applying moves)
   //so nodes with equal heuristic values don't always get taken in the same order
   board->shuffle_children();
@@ -292,6 +294,12 @@ double TreeSearch::time_for_this_move(Board *board, double time_remaining, int m
   //this means we will under-estimate the time we think we have so we don't accidentally time out
   time_remaining*=0.95;
   
+  //if we have fewer than 15 seconds left, just allocate a quarter second per move no matter what, that should guarantee completion of at least 1 iteration, probably 2
+  if(time_remaining<15)
+  {
+    return 0.25;
+  }
+  
   double time_for_move;
   
   //if we're already well into the game, assume fewer moves left before end
@@ -337,7 +345,7 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used)
+double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used)
 {
   //NOTE: we can't do the terminal node checks before the generate_moves call
   //because whether it's a terminal node or not depends on move generation
@@ -410,7 +418,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     gettimeofday(&start_time,NULL);
     
     //NOTE: on the recursive calls we generate the moves for the /other/ player
-    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, heur, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -470,7 +478,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_for_move, double time_used)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_for_move, double time_used)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
@@ -513,7 +521,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, heur, prune, alpha, beta, new_move_acc, time_limit, time_for_move, time_used);
+    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -567,7 +575,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
 }
 
 //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_remaining)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, bool use_history, double time_remaining)
 {
   _Move *end_move=NULL;
   
@@ -579,7 +587,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
   
   //the <= here is so max_depth_limit is inclusive
   //in the case we're doing a time-limited version of this we don't want to stop on max depth limit
-  for(int depth_limit=0; time_limit || (depth_limit<=max_depth_limit); depth_limit++)
+  for(int depth_limit=1; time_limit || (depth_limit<=max_depth_limit); depth_limit++)
   {
     printf("id_minimax debug 1, getting a move from dl_minimax with depth limit %i, prune is %s\n", depth_limit, prune? "True" : "False");
     
@@ -595,7 +603,16 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     gettimeofday(&start_time,NULL);
     
     _Move *old_move=end_move;
-    end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, heur, prune, time_limit, time_for_move, time_used);
+    
+    if(!use_history)
+    {
+      end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, heur, prune, time_limit, NULL, time_for_move, time_used);
+    }
+    else
+    {
+      //TODO: use a history table here
+    }
+    
     //if a new move was successfully generated
     if(end_move!=NULL)
     {

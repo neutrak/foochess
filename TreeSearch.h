@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include "AI.h"
 #include "structures.h"
+#include "HistTable.h"
 
 #define AVG(X,Y) ((X+Y)/2)
 //an out-of-bounds return code to tell when a call ran out of time
@@ -61,14 +62,16 @@ public:
   //those functions themselves just carefully choose the arguments to give to this
   //max should be true to max, false to min
   //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-  static double general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, double time_for_move, double time_used);
+  //hist is NULL when history is not being used
+  static double general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used);
   
   //depth-limited minimax
-  static _Move *dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_for_move, double time_used);
+  //hist is NULL when history is not being used
+  static _Move *dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_for_move, double time_used);
   
   //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
   //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, double time_remaining);
+  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, bool use_history, double time_remaining);
 };
 
 #endif

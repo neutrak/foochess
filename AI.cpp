@@ -291,17 +291,17 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     if(algo==ID_DLMM)
     {
       printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,time_remaining);
+      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,false,time_remaining);
     }
     else if(algo==TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,0,0,playerID(),move_accumulator,heur,true,true,time_remaining);
+      move=ts.id_minimax(board,1,0,playerID(),move_accumulator,heur,true,true,false,time_remaining);
     }
     else if(algo==HT_QS_TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making history table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,0,4,playerID(),move_accumulator,heur,true,true,time_remaining);
+      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,false,time_remaining);
     }
   }
   return move;

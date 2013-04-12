@@ -57,6 +57,7 @@ Board::Board(vector<Piece> pieces, Board *parent)
   //nothing's been moved yet
   last_moved=NULL;
   last_move_made=NULL;
+  last_capture_type='\0';
   moves_since_capture=0;
   moves_since_advancement=0;
   
@@ -133,6 +134,7 @@ Board::Board(Board *board)
   //nothing's been moved yet
   last_moved=NULL;
   last_move_made=NULL;
+  last_capture_type='\0';
   
   //the move history is carried though
   moves_since_capture=board->moves_since_capture;
@@ -624,6 +626,8 @@ void Board::apply_move(_Move *move, bool update_check)
     //DEFENSIVE: this should never be null
     if(get_element(file_to_capture,rank_to_capture)!=NULL)
     {
+      last_capture_type=get_element(file_to_capture,rank_to_capture)->type;
+      
       free(get_element(file_to_capture,rank_to_capture));
       state[((rank_to_capture-1)*width)+(file_to_capture-1)]=NULL;
       moves_since_capture=0;
@@ -635,6 +639,9 @@ void Board::apply_move(_Move *move, bool update_check)
   if(get_element(move->toFile, move->toRank)!=NULL)
   {
     _SuperPiece *victim=get_element(move->toFile, move->toRank);
+    
+    last_capture_type=victim->type;
+    
     free(victim);
     moves_since_capture=0;
   }
@@ -1193,7 +1200,8 @@ double Board::informed_points(int player_id, bool attack_ability)
           //add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
           if(get_element(f,r)->owner==player_id)
           {
-            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+//            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+            point_accumulator+=(point_value(get_element(f,r)->type));
           }
           //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
           else

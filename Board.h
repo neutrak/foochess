@@ -31,6 +31,10 @@ private:
   //and the last move applied to this board (initially NULL)
   _Move *last_move_made;
   
+  //store capture information because that's needed to identify things in the history table
+  //what type of piece was captured last (can also check moves_since_capture to tell if this was last move)
+  int last_capture_type;
+  
   //the number of moves since the last capture, pawn advancement (respectively)
   //initialized to 0 in the normal constructor; carried in the copy constructor
   int moves_since_capture;
@@ -59,6 +63,7 @@ public:
   bool get_check(int player_id){ return (player_id==WHITE) ? white_check : black_check; }
   int get_moves_since_capture(){ return moves_since_capture; }
   int get_moves_since_advancement(){ return moves_since_advancement; }
+  int get_last_capture_type(){ return last_capture_type; }
   
   //deal with other nodes in the structure
   void add_child(Board *board);

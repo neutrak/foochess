@@ -17,15 +17,15 @@ Additional comments for the third assignment
   there is a time_for_this_move function in the TreeSearch class; I also estimated the minimum time it would take to do another iteration within id_minimax and factored that in
   minimax returns early from recursive calls as soon as it runs out of time
   there is a prompt for user-specified algorithm and heuristic use, with a timeout in case the code is run on the arena
-  because the algorithm doesn't distinguish between checkmates at different levels, the bot may choose to go for a checkmate several moves ahead when an immediate one is available
-    I can add a check for this in id_minimax to stop as soon as one valid checkmate is found instead of continuing onto the next depth, but the algorithm didn't specify it so I didn't to be consistent with what the assignment was asking
-    when I enter the tournament I plan to add this check
-
 
 Modifications and additions for the fourth assignment (in response to grader feedback)
   I removed the check for opponent in checkmate when opponent isn't at move in the general minimax function, as requested
   I removed the king count from naive_points, and by extension informed_points
+  Immediate checkmates are now accounted for, as noted in my previous comments; this prevents trying to go along a path to a further away checkmate when an immediate one exists
+    The history table would have largely dimished this effect anyway, but just to be safe
 
 Additional comments for the fourth assignment
   non-quiescent search is done by setting the quiescent depth limit to 0, rather than another boolean argument
+  when not using a history table (backwards compatibility), dl_minimax and general_min_or_max_pruning will have a "hist" argument value of NULL
+    otherwise it will be a pointer to a HistTable object, defined in HistTable.h
 
