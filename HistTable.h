@@ -1,11 +1,12 @@
 #ifndef HISTTABLE_H
 #define HISTTABLE_H
-#include "Board.h"
 #include <map>
 #include <stdlib.h>
 #include <stdio.h>
+#include "Board.h"
 using namespace std;
 
+class Board;
 struct _HistMove;
 
 //a structure to identify a move

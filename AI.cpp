@@ -55,6 +55,8 @@ bool AI::tl_input(char *buffer, int buffer_size, int timeout)
 void AI::init()
 {
   srand(time(NULL));
+  //no history table until otherwise specified
+  hist=NULL;
   
   //an algorithm variable so we can re-use generalized code instead of losing old functionality
   //set the default
@@ -62,12 +64,13 @@ void AI::init()
 //  algo=RANDOM;
 //  algo=ID_DLMM;
 //  algo=TL_AB_ID_DLMM;
+//  algo=QS_TL_AB_ID_DLMM;
   algo=HT_QS_TL_AB_ID_DLMM;
   
   heur=INFORMED_DANGER;
   
   //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
-  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM): ");
+  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, QS_TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM): ");
   fflush(stdout);
   
   char algo_choice[512];
@@ -89,8 +92,13 @@ void AI::init()
     {
       algo=TL_AB_ID_DLMM;
     }
+    else if(!strcmp(algo_choice,"QS_TL_AB_ID_DLMM"))
+    {
+      algo=QS_TL_AB_ID_DLMM;
+    }
     else if(!strcmp(algo_choice,"HT_QS_TL_AB_ID_DLMM"))
     {
+      hist=new HistTable();
       algo=HT_QS_TL_AB_ID_DLMM;
     }
     else
@@ -104,7 +112,7 @@ void AI::init()
   }
   
   //heuristic choice
-  if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
+  if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==QS_TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
   {
     printf("Enter a heuristic to use (options are INFORMED_DANGER, INFORMED_ATTACK, INFORMED_DEFEND, NAIVE_ATTACK, NAIVE_DEFEND): ");
     fflush(stdout);
@@ -257,7 +265,7 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     printf("AI::run() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,playerID());
   }
-  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
+  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==QS_TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
   {
     //make a move accumulator to start it out based on the moves their API gives us
     //note this builds the array in reverse order to what's given
@@ -291,17 +299,22 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     if(algo==ID_DLMM)
     {
       printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,false,time_remaining);
+      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,NULL,time_remaining);
     }
     else if(algo==TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,0,playerID(),move_accumulator,heur,true,true,false,time_remaining);
+      move=ts.id_minimax(board,1,0,playerID(),move_accumulator,heur,true,true,NULL,time_remaining);
+    }
+    else if(algo==QS_TL_AB_ID_DLMM)
+    {
+      printf("AI::run() debug 0.5, making quiescent-search time-limited alpha-beta pruned id minimax move\n");
+      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,NULL,time_remaining);
     }
     else if(algo==HT_QS_TL_AB_ID_DLMM)
     {
       printf("AI::run() debug 0.5, making history table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,false,time_remaining);
+      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,hist,time_remaining);
     }
   }
   return move;
@@ -334,7 +347,6 @@ bool AI::run()
   //first, get a list of the pieces we're allowed to move
   //can't make a move if we don't know possible pieces
   vector<Piece> owned_pieces;
-  vector<Piece> enemy_pieces;
   
   vector<Piece>::iterator i;
   for(i=pieces.begin(); i!=pieces.end(); i++)
@@ -342,10 +354,6 @@ bool AI::run()
     if((*i).owner() == playerID())
     {
       owned_pieces.push_back(*i);
-    }
-    else
-    {
-      enemy_pieces.push_back(*i);
     }
   }
   double time_remaining=0;
@@ -363,11 +371,19 @@ bool AI::run()
     }
     cout<<" time remaining: "<<players[p].time()<<endl;
   }
-
+  
   // if there has been a move, print the most recent move
   if(moves.size() > 0)
   {
     cout<<"Last Move Was: "<<endl<<moves[0]<<endl;
+  }
+  
+  //this is a "sliding window" for history table algorithms
+  //it doesn't really slide so much as step, but it's still better behavior than never adjusting for early to late game
+  if((moves.size()%15==0) && hist!=NULL)
+  {
+    delete hist;
+    hist=new HistTable();
   }
   
   //make a move depending on the algorithm in use and the time left
@@ -427,6 +443,11 @@ void AI::end()
   if(master!=NULL)
   {
     delete master;
+  }
+  
+  if(hist!=NULL)
+  {
+    delete hist;
   }
 }
 

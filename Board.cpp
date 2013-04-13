@@ -231,6 +231,21 @@ void Board::clear_children()
   children.clear();
 }
 
+void Board::swap_children(size_t a, size_t b)
+{
+  if((a>=0 && a<children.size()) && (b>=0 && b<children.size()))
+  {
+    //(this could be done without tmp with an xor operation, but memory isn't what we care about here)
+    Board *tmp=children[a];
+    children[a]=children[b];
+    children[b]=tmp;
+  }
+  else
+  {
+    fprintf(stderr,"Err: Board::swap_children index out of bounds!\n");
+  }
+}
+
 //a helper function to randomize children (and by extension move choices)
 void Board::shuffle_children()
 {
@@ -243,16 +258,61 @@ void Board::shuffle_children()
   for(size_t swaps=0; swaps<children.size(); swaps++)
   {
     //pick the smallest thing we haven't already swapped
-    int first=swaps;
+    size_t first=swaps;
     //pick a second random index to swap with the first one, after the first one
-    int second=(rand()%(children.size()-swaps))+swaps;
+    size_t second=(rand()%(children.size()-swaps))+swaps;
     
     //do the swap
-    //(this could be done without tmp with an xor operation, but memory isn't what we care about here)
-    Board *tmp=children[first];
-    children[first]=children[second];
-    children[second]=tmp;
+    swap_children(first,second);
   }
+}
+
+//order children by history table values, given a history table to use
+void Board::history_order_children(HistTable *hist)
+{
+  //DEFENSIVE, we should never be passed null into here
+  if(hist!=NULL)
+  {
+    quicksort_children(0,children.size()-1,hist);
+  }
+}
+
+//an in-place quicksort implementation, sorting by history table values
+void Board::quicksort_children(int lower_bound, int upper_bound, HistTable *hist)
+{
+  if(lower_bound<upper_bound)
+  {
+    int pivot_index=(upper_bound+lower_bound)/2;
+//    int pivot_index=lower_bound;
+    
+    pivot_index=quicksort_partition_children(lower_bound,upper_bound,hist,pivot_index);
+    
+    quicksort_children(lower_bound, pivot_index-1, hist);
+    quicksort_children(pivot_index+1, upper_bound, hist);
+  }
+}
+
+//quicksort helper
+int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int pivot_index)
+{
+  int pivot_value=hist->get_value(children[pivot_index]);
+  
+  //a swap operation, swapping pivot index and upper bound elements
+  swap_children(upper_bound,pivot_index);
+  
+  int store_index=lower_bound;
+  
+  //NOTE: the upper_bound we were passed in is inclusive; we just swapped pivot_index with that element
+  for(int i=lower_bound; i<upper_bound; i++)
+  {
+    if(hist->get_value(children[i])>=pivot_value)
+    {
+      swap_children(i,store_index);
+      store_index++;
+    }
+  }
+  swap_children(store_index,upper_bound);
+  return store_index;
 }
 
 //Output the board
@@ -1190,6 +1250,9 @@ double Board::informed_points(int player_id, bool attack_ability)
   //positioning is accounted for based on attack ability
   if(attack_ability)
   {
+    //the best enemy piece we are capable of attacking in this state
+    int best_piece=0;
+    
     for(int f=1; f<=width; f++)
     {
       for(int r=1; r<=height; r++)
@@ -1200,17 +1263,24 @@ double Board::informed_points(int player_id, bool attack_ability)
           //add a value proportional to the points value of a piece for every one of our own pieces we can attack (using in_check)
           if(get_element(f,r)->owner==player_id)
           {
-//            point_accumulator+=(point_value(get_element(f,r)->type)/3);
-            point_accumulator+=(point_value(get_element(f,r)->type));
+            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+//            point_accumulator+=(point_value(get_element(f,r)->type));
           }
           //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
           else
           {
-            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+//            point_accumulator+=(point_value(get_element(f,r)->type)/3);
+//            point_accumulator+=(point_value(get_element(f,r)->type));
+            
+            if(point_value(get_element(f,r)->type)>best_piece)
+            {
+              best_piece=point_value(get_element(f,r)->type);
+            }
           }
         }
       }
     }
+    point_accumulator+=best_piece;
   }
     
   //add in for the case the given player is checking the opponent

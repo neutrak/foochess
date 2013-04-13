@@ -26,6 +26,8 @@ Modifications and additions for the fourth assignment (in response to grader fee
 
 Additional comments for the fourth assignment
   non-quiescent search is done by setting the quiescent depth limit to 0, rather than another boolean argument
-  when not using a history table (backwards compatibility), dl_minimax and general_min_or_max_pruning will have a "hist" argument value of NULL
+  when not using a history table (backwards compatibility) id_minimiax, dl_minimax, and general_min_or_max_pruning will have a "hist" argument value of NULL
     otherwise it will be a pointer to a HistTable object, defined in HistTable.h
+  a max-sorting quicksort algorithm is used to order children, it is declared in Board.h and defined in Board.cpp
+    it is (indirectly) called at the start of dl_minimax and general_min_or_max_pruning, just after children nodes are generated
 

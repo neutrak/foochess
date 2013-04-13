@@ -3,8 +3,11 @@
 
 #include "Piece.h"
 #include "SuperPiece.h"
+#include "HistTable.h"
 #include <vector>
 using namespace std;
+
+class HistTable;
 
 //bounds for heuristic values; it's needed a few places
 //9 is the value for a queen, 16 is the total number of pieces
@@ -69,8 +72,15 @@ public:
   void add_child(Board *board);
   void remove_child(size_t index);
   void clear_children();
+  void swap_children(size_t a, size_t b);
   //a helper function to randomize children (and by extension move choices)
   void shuffle_children();
+  //order children by history table values, given a history table to use
+  void history_order_children(HistTable *hist);
+  //an in-place quicksort implementation, sorting by history table values
+  void quicksort_children(int lower_bound, int upper_bound, HistTable *hist);
+  //quicksort helper
+  int quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int pivot_index);
   
   //display whatever the current state of the board is
   void output_board();

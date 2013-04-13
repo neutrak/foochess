@@ -8,7 +8,7 @@ Your code is really good.  Everything basically works right.  But you've added i
 
 Your different heuristics for the bonus are decent.  Not exactly revolutionary compared to the original point value heuristic, but it is an improvement it seems.  I think you could expand on it even more to make it very good.  
 
-You had a note in your readme about checkmates at different depths.  I agree with the idea of stopping at the current depth if you find a guaranteed checkmate, but if you've found multiple paths for which minimax has found you putting your opponent in checkmate, then all of those paths are guaranteed to lead to checkmate, and it really doesn't matter which one you follow.  
+//You had a note in your readme about checkmates at different depths.  I agree with the idea of stopping at the current depth if you find a guaranteed checkmate, but if you've found multiple paths for which minimax has found you putting your opponent in checkmate, then all of those paths are guaranteed to lead to checkmate, and it really doesn't matter which one you follow.  
 
 Last note, you seem to have left your debugging output statements on, so the terminal is just spewing text while your algorithm runs.  
 

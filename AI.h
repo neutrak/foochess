@@ -16,6 +16,7 @@ enum algorithm
   RANDOM, //random
   ID_DLMM, //iterative-deepening depth-limited minimax
   TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
+  QS_TL_AB_ID_DLMM, //quiescent search extensions added to TL_AB_ID_DLMM
   HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
   
   ALGO_COUNT
@@ -42,6 +43,8 @@ private:
   algorithm algo;
   //the heuristic to use (for the algorithms which are heuristic-based)
   heuristic heur;
+  //the history table this AI is using (NULL for none)
+  HistTable *hist;
 public:
   AI(Connection* c);
   virtual const char* username();

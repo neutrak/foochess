@@ -63,12 +63,6 @@ vector <_Move*> TreeSearch::generate_moves(Board *board, int player_id)
     }
   }
   
-  //TODO: when a history table is being used, order children by history table values
-  
-  //board->shuffle_children randomizes children (created by applying moves)
-  //so nodes with equal heuristic values don't always get taken in the same order
-  board->shuffle_children();
-  
   return valid_moves;
 }
 
@@ -302,16 +296,8 @@ double TreeSearch::time_for_this_move(Board *board, double time_remaining, int m
   
   double time_for_move;
   
-  //if we're already well into the game, assume fewer moves left before end
-  if(moves_made>50)
-  {
-    time_for_move=time_remaining/40.0;
-  }
-  else
-  {
-    //assume we have 60 moves left, distribute time evenly accordingly
-    time_for_move=time_remaining/60.0;
-  }
+  //assume we have 50 moves left, distribute time evenly accordingly
+  time_for_move=time_remaining/50.0;
   
   return time_for_move;
 }
@@ -352,6 +338,17 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   
   //generate children for the given node
   generate_moves(node,player_id);
+  
+  if(hist==NULL)
+  {
+    node->shuffle_children();
+  }
+  //when a history table is being used, order children by history table values
+  else
+  {
+//    node->shuffle_children();
+    node->history_order_children(hist);
+  }
   
   //NOTE: only the player at move can be in checkmate
   //if we are in checkmate, return heuristic minimum (for max player)
@@ -401,6 +398,8 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   //if we got through that and didn't return it's determined by the other player's actions, so make some more calls
   //go through all children and find the best assuming the opponent makes good choices
   double best=(max)? HEURISTIC_MINIMUM : HEURISTIC_MAXIMUM;
+  //the child that gives us the best heuristic value (so we can increment its history value)
+  size_t best_child=0;
   
   for(size_t i=0; i<(node->get_children().size()); i++)
   {
@@ -442,6 +441,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
       //fail low for min player or fail high for max player
       if(((opponent_move<=alpha) && (!max)) || ((opponent_move>=beta) && (max)))
       {
+        best_child=i;
         //return the fail up so that the other recursion levels can handle it accordingly
         best=opponent_move;
 //        printf("general_min_or_max_pruning debug 1, pruning a %lf with bounds (%lf,%lf)\n", opponent_move, alpha, beta);
@@ -453,6 +453,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     //if this move is better than the current best, it's the new best
     if((max && opponent_move>best) || (!max && opponent_move<best))
     {
+      best_child=i;
       best=opponent_move;
       
       //NOTE: if prune is not true, these values will still be set, but they won't be used for anything
@@ -468,6 +469,13 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
       }
     }
   }
+  
+  //update the relevant history table entry before we return
+  if(hist!=NULL && best!=OUT_OF_TIME)
+  {
+    hist->increment_or_make(node->get_children()[best_child]);
+  }
+  
   //manage memory; we won't need this any more
   node->clear_children();
   
@@ -492,6 +500,19 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   //this is done as a side-effect of move generation
   generate_moves(root, player_id);
   
+  if(hist==NULL)
+  {
+    //board->shuffle_children randomizes children (created by applying moves)
+    //so nodes with equal heuristic values don't always get taken in the same order
+    root->shuffle_children();
+  }
+  //when a history table is being used, order children by history table values
+  else
+  {
+//    root->shuffle_children();
+    root->history_order_children(hist);
+  }
+  
 //  printf("dl_minimax debug 1, now have a board with %i children\n", root->get_children().size());
   
   //the first player is always max-ing
@@ -500,6 +521,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   double current_max=HEURISTIC_MINIMUM;
   //initially the move that got us that desired max value is null
   _Move *max_move=NULL;
+  size_t best_child=0;
   
   //find the max value of all children (which will be determined recursively)
   for(size_t i=0; i<root->get_children().size(); i++)
@@ -533,6 +555,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     //if we're out of time, return NULL (as an error code) and clean up memory
     if((heuristic==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
     {
+      current_max=OUT_OF_TIME;
       printf("dl_minimax debug 1.5, OUT OF TIME, returning early\n");
       free(max_move);
       max_move=NULL;
@@ -542,6 +565,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     //if we don't have a move yet take this one regardless of heuristic
     if(heuristic>current_max || max_move==NULL)
     {
+      best_child=i;
       current_max=heuristic;
       
       //as the max player we will no longer accept anything worse than what we just got
@@ -556,6 +580,12 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
       
       max_move=root->copy_move(root->get_children()[i]->get_last_move_made());
     }
+  }
+  
+  //update the relevant history table entry before we return
+  if(hist!=NULL && current_max!=OUT_OF_TIME)
+  {
+    hist->increment_or_make(root->get_children()[best_child]);
   }
   
   //clean up memory from those recursive calls
@@ -575,7 +605,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
 }
 
 //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, bool use_history, double time_remaining)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_remaining)
 {
   _Move *end_move=NULL;
   
@@ -604,14 +634,8 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     
     _Move *old_move=end_move;
     
-    if(!use_history)
-    {
-      end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, heur, prune, time_limit, NULL, time_for_move, time_used);
-    }
-    else
-    {
-      //TODO: use a history table here
-    }
+    //NOTE: when not using a history table, hist will be NULL
+    end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, heur, prune, time_limit, hist, time_for_move, time_used);
     
     //if a new move was successfully generated
     if(end_move!=NULL)
@@ -638,13 +662,15 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     //estimate the time that will be required for the next iteration
     //and take into account whether we will possibly be able to finish another iteration
     //if we don't think there's any real chance we can finish it don't bother starting it; this will save us some valuable play time for later
-/*
+    
     //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 5 as a VERY optimistic branch factor
     double time_for_next=5*(after-before);
-*/
+    
+/*
     //the next iteration will almost always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
     //this assumes no crazy amazing pruning benefits happen
     double time_for_next=after-before;
+*/
     
     //time limit stop loop condition (since we're not using the loop condition in the for statement)
     if(time_limit && ((time_used+time_for_next)>=time_for_move))
