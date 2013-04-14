@@ -346,7 +346,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
   //when a history table is being used, order children by history table values
   else
   {
-//    node->shuffle_children();
+    node->shuffle_children();
     node->history_order_children(hist);
   }
   
@@ -509,7 +509,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   //when a history table is being used, order children by history table values
   else
   {
-//    root->shuffle_children();
+    root->shuffle_children();
     root->history_order_children(hist);
   }
   
