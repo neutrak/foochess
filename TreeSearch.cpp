@@ -241,7 +241,7 @@ double TreeSearch::informed_danger_heuristic(Board *node, int player_id, bool ma
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->informed_points(pid,true))-(node->informed_points(!pid,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
+  return (node->points(pid,true,true)*0.7)-(node->points(!pid,true,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
 }
 
 double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool max)
@@ -251,10 +251,10 @@ double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool ma
   //if the max player is not at move, calculate with respect to it anyway
   int pid=max? player_id : !player_id;
   
-//  return node->informed_points(pid,true); //keep ourselves alive above all else
-//  return ((node->informed_points(pid,true))-(node->informed_points(!pid,true))); //make us have a higher score than the enemy above all else
-//  return -(node->informed_points(!pid,true)); //kill the enemy above all else
-  return (node->informed_points(pid,false)*0.7)-(node->informed_points(!pid,false)); //kill the enemy but don't sacrifice everything to accomplish that
+//  return node->points(pid,true,true); //keep ourselves alive above all else
+//  return ((node->points(pid,true,true))-(node->points(!pid,true,true))); //make us have a higher score than the enemy above all else
+//  return -(node->points(!pid,true,true)); //kill the enemy above all else
+  return (node->points(pid,true,false)*0.7)-(node->points(!pid,true,false)); //kill the enemy but don't sacrifice everything to accomplish that
 }
 
 double TreeSearch::informed_defend_heuristic(Board *node, int player_id, bool max)
@@ -262,7 +262,7 @@ double TreeSearch::informed_defend_heuristic(Board *node, int player_id, bool ma
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->informed_points(pid,false))-(node->informed_points(!pid,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
+  return (node->points(pid,true,false))-(node->points(!pid,true,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
 }
 
 double TreeSearch::naive_attack_heuristic(Board *node, int player_id, bool max)
@@ -270,7 +270,7 @@ double TreeSearch::naive_attack_heuristic(Board *node, int player_id, bool max)
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->naive_points(pid)*0.7)-(node->naive_points(!pid)); //kill the enemy but don't sacrifice everything to accomplis that
+  return (node->points(pid,false,false)*0.7)-(node->points(!pid,false,false)); //kill the enemy but don't sacrifice everything to accomplis that
 }
 
 double TreeSearch::naive_defend_heuristic(Board *node, int player_id, bool max)
@@ -278,7 +278,7 @@ double TreeSearch::naive_defend_heuristic(Board *node, int player_id, bool max)
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->naive_points(pid))-(node->naive_points(!pid)*0.7); //defend ourselves first but kill the enemy where it's convienent
+  return (node->points(pid,false,false))-(node->points(!pid,false,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
 }
 
 //how much time to allocate to this move given the board and how much time we have left

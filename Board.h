@@ -134,11 +134,9 @@ public:
   //the value of a given type of piece
   double point_value(int type);
   
-  //just point values as commonly defined
-  double naive_points(int player_id);
-  
-  //point values with position taken into account, etc.
-  double informed_points(int player_id, bool attack_ability);
+  //when informed is false just point values as commonly defined
+  //when informed is true position is taken into account, etc.
+  double points(int player_id, bool informed, bool attack_ability);
   
   //returns true if this board state is "quiescent"; else false
   bool quiescent();
