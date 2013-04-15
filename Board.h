@@ -138,6 +138,10 @@ public:
   //when informed is true position is taken into account, etc.
   double points(int player_id, bool informed, bool attack_ability);
   
+  //this is a count of how many tiles on the board are attackable by the given player
+  //it's something I'm playing with as part of heuristic calculation
+  double board_ownership(int player_id);
+  
   //returns true if this board state is "quiescent"; else false
   bool quiescent();
 };

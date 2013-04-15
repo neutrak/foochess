@@ -25,11 +25,14 @@ Modifications and additions for the fourth assignment (in response to grader fee
     The history table would have largely dimished this effect anyway, but just to be safe
 
 Additional comments for the fourth assignment
+  I renamed my general min or max function to just min_or_max for clarity/ease
   non-quiescent search is done by setting the quiescent depth limit to 0, rather than another boolean argument
-  when not using a history table (backwards compatibility) id_minimiax, dl_minimax, and general_min_or_max_pruning will have a "hist" argument value of NULL
+    quiescent is (for now) determined just be seeing if anyone is in check; if they are, it's not a quiescent state
+  when not using a history table (backwards compatibility) id_minimiax, dl_minimax, and min_or_max will have a "hist" argument value of NULL
     otherwise it will be a pointer to a HistTable object, defined in HistTable.h
   a max-sorting quicksort algorithm is used to order children, it is declared in Board.h and defined in Board.cpp
-    it is (indirectly) called at the start of dl_minimax and general_min_or_max_pruning, just after children nodes are generated
+    it is (indirectly) called at the start of dl_minimax and min_or_max, just after children nodes are generated
   a "sliding window" for the history table was difficult to implement, so for the moment I'm using a "stepping window"
-    every 15 moves the old history table is discarded and a new one is started, in case moves that were good earlier are no longer as good
+    every so many moves the old history table is discarded and a new one is started, in case moves that were good earlier are no longer as good
+    this is a couple of lines in AI.cpp that delete the old one and make a new one when move_count%(constant)==0; or every <constant> moves
 

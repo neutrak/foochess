@@ -55,12 +55,12 @@ public:
   //NOTE: the move_accumulator everywhere is for detecting a statelmate-by-repeat situation
   
   //a generalized function for code-reuse
-  //this serves the functions of dl_maxV, dl_minV, abdl_maxV, and abdl_minV
-  //those functions themselves just carefully choose the arguments to give to this
+  //this serves the functions of dl_maxV, dl_minV, abdl_maxV, and abdl_minV, etc.
   //max should be true to max, false to min
   //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
+  //QS depth should be 0 when quiescent search is not being used
   //hist is NULL when history is not being used
-  static double general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used);
+  static double min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used);
   
   //depth-limited minimax
   //hist is NULL when history is not being used

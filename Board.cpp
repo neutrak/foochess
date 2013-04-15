@@ -1247,7 +1247,7 @@ double Board::points(int player_id, bool informed, bool attack_ability)
             //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
             else
             {
-//              point_accumulator+=(point_value(get_element(f,r)->type)/3);
+              point_accumulator+=(point_value(get_element(f,r)->type)/10);
 //              point_accumulator+=(point_value(get_element(f,r)->type));
               
               if(point_value(get_element(f,r)->type)>best_piece)
@@ -1279,6 +1279,30 @@ double Board::points(int player_id, bool informed, bool attack_ability)
   }
   
   return point_accumulator;
+}
+
+//this is a count of how many tiles on the board are attackable by the given player
+//it's something I'm playing with as part of heuristic calculation
+double Board::board_ownership(int player_id)
+{
+  double position_accumulator=0;
+  
+  for(int f=1; f<=width; f++)
+  {
+    for(int r=1; r<=height; r++)
+    {
+      //if the other player would be in check were their king here
+      //NOTE: an en passant cannot capture a king so that is not accounted for here
+      //since an en passant can only take a pawn anyway this is deemed acceptable
+      if(in_check(f,r,!player_id))
+      {
+        //then we can attack this square, we "own" it
+        position_accumulator+=1;
+      }
+    }
+  }
+  
+  return position_accumulator;
 }
 
 //returns true if this board state is "quiescent"; else false

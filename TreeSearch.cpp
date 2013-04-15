@@ -241,7 +241,7 @@ double TreeSearch::informed_danger_heuristic(Board *node, int player_id, bool ma
   //player id of max player
   int pid=max? player_id : !player_id;
   
-  return (node->points(pid,true,true)*0.7)-(node->points(!pid,true,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
+  return (node->points(pid,true,true)*0.75)-(node->points(!pid,true,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
 }
 
 double TreeSearch::informed_attack_heuristic(Board *node, int player_id, bool max)
@@ -331,7 +331,7 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
 //prune should be true for pruning, false for not; alpha and beta are ignored when prune is false
-double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used)
+double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, heuristic heur, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, double time_for_move, double time_used)
 {
   //NOTE: we can't do the terminal node checks before the generate_moves call
   //because whether it's a terminal node or not depends on move generation
@@ -417,7 +417,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     gettimeofday(&start_time,NULL);
     
     //NOTE: on the recursive calls we generate the moves for the /other/ player
-    double opponent_move=general_min_or_max_pruning(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
+    double opponent_move=min_or_max(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -430,7 +430,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
     //if we're out of time, return NULL (as an error code) and clean up memory
     if((opponent_move==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
     {
-      printf("general_min_or_max_pruning debug 2, OUT OF TIME, returning early\n");
+      printf("min_or_max debug 2, OUT OF TIME, returning early\n");
       best=OUT_OF_TIME;
       break;
     }
@@ -444,7 +444,7 @@ double TreeSearch::general_min_or_max_pruning(Board *node, int depth_limit, int 
         best_child=i;
         //return the fail up so that the other recursion levels can handle it accordingly
         best=opponent_move;
-//        printf("general_min_or_max_pruning debug 1, pruning a %lf with bounds (%lf,%lf)\n", opponent_move, alpha, beta);
+//        printf("min_or_max debug 1, pruning a %lf with bounds (%lf,%lf)\n", opponent_move, alpha, beta);
         //breaking this loop early means we won't check any more children at this level, thus "pruning" the remaining iterations/children
         break;
       }
@@ -543,7 +543,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=general_min_or_max_pruning(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
+    double heuristic=min_or_max(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, heur, prune, alpha, beta, new_move_acc, time_limit, hist, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
