@@ -46,7 +46,7 @@ public:
   static double naive_defend_heuristic(Board *node, int player_id, bool max);
   
   //how much time to allocate to this move given the board and how much time we have left
-  static double time_for_this_move(Board *board, double time_remaining, int moves_made);
+  static double time_for_this_move(Board *board, int player_id, double time_remaining, double enemy_time_remaining, int moves_made);
   
   //make a random [legal] move
   static _Move *random_move(Board *board, int player_id);
@@ -68,7 +68,7 @@ public:
   
   //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
   //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_remaining);
+  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_remaining, double enemy_time_remaining);
 };
 
 #endif

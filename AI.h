@@ -56,7 +56,7 @@ public:
   Board *board_from_master();
   _Move *user_move(Board *board);
   //make a move depending on the algorithm in use and the time left
-  _Move *ai_move(Board *board, double time_remaining);
+  _Move *ai_move(Board *board, double time_remaining, double enemy_time_remaining);
   virtual bool run();
   virtual void end();
 };

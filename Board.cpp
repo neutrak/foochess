@@ -1247,7 +1247,7 @@ double Board::points(int player_id, bool informed, bool attack_ability)
             //add a value proportional to the points value of a piece for every enemy piece we can capture (using in_check)
             else
             {
-              point_accumulator+=(point_value(get_element(f,r)->type)/10);
+//              point_accumulator+=(point_value(get_element(f,r)->type)/10);
 //              point_accumulator+=(point_value(get_element(f,r)->type));
               
               if(point_value(get_element(f,r)->type)>best_piece)

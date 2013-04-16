@@ -282,7 +282,7 @@ double TreeSearch::naive_defend_heuristic(Board *node, int player_id, bool max)
 }
 
 //how much time to allocate to this move given the board and how much time we have left
-double TreeSearch::time_for_this_move(Board *board, double time_remaining, int moves_made)
+double TreeSearch::time_for_this_move(Board *board, int player_id, double time_remaining, double enemy_time_remaining, int moves_made)
 {
   //give us a 5% margin of error right away, just in case (defensively)
   //this means we will under-estimate the time we think we have so we don't accidentally time out
@@ -295,6 +295,14 @@ double TreeSearch::time_for_this_move(Board *board, double time_remaining, int m
   }
   
   double time_for_move;
+  
+  //if we're losing and can afford some time, allocate more time to this move, in the hopes of catching up
+  //this naive_points heuristic is too simple for actual game use, but serves well enough here
+  if((time_remaining>enemy_time_remaining) && (board->points(player_id,false,false) > board->points(!player_id,false,false)))
+  {
+    //add half the difference again, we can afford to spend a lot more time on this
+    time_remaining+=((time_remaining-enemy_time_remaining)/2);
+  }
   
   //assume we have 50 moves left, distribute time evenly accordingly
   time_for_move=time_remaining/50.0;
@@ -605,14 +613,14 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
 }
 
 //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_remaining)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, double time_remaining, double enemy_time_remaining)
 {
   _Move *end_move=NULL;
   
   //how much time we have used so far
   double time_used=0;
   //how much time to allocate for this move
-  double time_for_move=time_for_this_move(root,time_remaining, move_accumulator.size());
+  double time_for_move=time_for_this_move(root,player_id,time_remaining,enemy_time_remaining,move_accumulator.size());
   printf("id_minimax debug 0, allocating %lf seconds to this move\n",time_for_move);
   
   //the <= here is so max_depth_limit is inclusive

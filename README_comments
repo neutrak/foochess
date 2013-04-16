@@ -35,4 +35,5 @@ Additional comments for the fourth assignment
   a "sliding window" for the history table was difficult to implement, so for the moment I'm using a "stepping window"
     every so many moves the old history table is discarded and a new one is started, in case moves that were good earlier are no longer as good
     this is a couple of lines in AI.cpp that delete the old one and make a new one when move_count%(constant)==0; or every <constant> moves
+  the time allocation is changed now so that if the enemy has used much more time than us and we are losing, more time will be allocated to [hopefully] catch up
 

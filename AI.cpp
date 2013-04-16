@@ -250,19 +250,19 @@ _Move *AI::user_move(Board *board)
 }
 
 //make a move depending on the algorithm (within the AI class) in use and the time left
-_Move *AI::ai_move(Board *board, double time_remaining)
+_Move *AI::ai_move(Board *board, double time_remaining, double enemy_time_remaining)
 {
   _Move *move=NULL;
   
   //if the user is playing, get the start and end positions from stdin
   if(algo==USER)
   {
-    printf("AI::run() debug 0.5, making user-specified move\n");
+    printf("AI::ai_move() debug 0.5, making user-specified move\n");
     move=user_move(board);
   }
   else if(algo==RANDOM)
   {
-    printf("AI::run() debug 0.5, making random move\n");
+    printf("AI::ai_move() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,playerID());
   }
   else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==QS_TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM)
@@ -298,23 +298,23 @@ _Move *AI::ai_move(Board *board, double time_remaining)
     //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
     if(algo==ID_DLMM)
     {
-      printf("AI::run() debug 0.5, making id_minimax move\n");
-      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,NULL,time_remaining);
+      printf("AI::ai_move() debug 0.5, making id_minimax move\n");
+      move=ts.id_minimax(board,3,0,playerID(),move_accumulator,heur,false,false,NULL,time_remaining,enemy_time_remaining);
     }
     else if(algo==TL_AB_ID_DLMM)
     {
-      printf("AI::run() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,0,playerID(),move_accumulator,heur,true,true,NULL,time_remaining);
+      printf("AI::ai_move() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
+      move=ts.id_minimax(board,1,0,playerID(),move_accumulator,heur,true,true,NULL,time_remaining,enemy_time_remaining);
     }
     else if(algo==QS_TL_AB_ID_DLMM)
     {
-      printf("AI::run() debug 0.5, making quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,NULL,time_remaining);
+      printf("AI::ai_move() debug 0.5, making quiescent-search time-limited alpha-beta pruned id minimax move\n");
+      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,NULL,time_remaining,enemy_time_remaining);
     }
     else if(algo==HT_QS_TL_AB_ID_DLMM)
     {
-      printf("AI::run() debug 0.5, making history table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,hist,time_remaining);
+      printf("AI::ai_move() debug 0.5, making history table quiescent-search time-limited alpha-beta pruned id minimax move\n");
+      move=ts.id_minimax(board,1,4,playerID(),move_accumulator,heur,true,true,hist,time_remaining,enemy_time_remaining);
     }
   }
   return move;
@@ -356,7 +356,8 @@ bool AI::run()
       owned_pieces.push_back(*i);
     }
   }
-  double time_remaining=0;
+  double time_remaining=900;
+  double enemy_time_remaining=900;
   
   // Looks through information about the players
   for(size_t p=0; p<players.size(); p++)
@@ -368,6 +369,10 @@ bool AI::run()
       cout<<" (ME)";
       //store the time left so that we can manage it well
       time_remaining=players[p].time();
+    }
+    else
+    {
+      enemy_time_remaining=players[p].time();
     }
     cout<<" time remaining: "<<players[p].time()<<endl;
   }
@@ -387,7 +392,7 @@ bool AI::run()
   }
   
   //make a move depending on the algorithm in use and the time left
-  _Move* move=ai_move(board, time_remaining);
+  _Move* move=ai_move(board, time_remaining, enemy_time_remaining);
   
   if(move!=NULL)
   {
