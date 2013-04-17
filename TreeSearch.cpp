@@ -443,7 +443,7 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
     //if we're out of time, return NULL (as an error code) and clean up memory
     if((opponent_move==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
     {
-      printf("min_or_max debug 2, OUT OF TIME, returning early\n");
+//      printf("min_or_max debug 2, OUT OF TIME, returning early\n");
       best=OUT_OF_TIME;
       break;
     }
@@ -569,7 +569,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     if((heuristic==OUT_OF_TIME) || (time_limit && (time_used>=time_for_move)))
     {
       current_max=OUT_OF_TIME;
-      printf("dl_minimax debug 1.5, OUT OF TIME, returning early\n");
+//      printf("dl_minimax debug 1.5, OUT OF TIME, returning early\n");
       free(max_move);
       max_move=NULL;
       break;
@@ -606,7 +606,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   
   if(max_move!=NULL)
   {
-    printf("dl_minimax debug 2, best move is from file, rank (%i,%i) to (%i,%i) (heuristic value %lf)\n", max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank, current_max);
+//    printf("dl_minimax debug 2, best move is from file, rank (%i,%i) to (%i,%i) (heuristic value %lf)\n", max_move->fromFile, max_move->fromRank, max_move->toFile, max_move->toRank, current_max);
   }
   
   free_move_acc(move_accumulator);
@@ -626,13 +626,13 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
   double time_used=0;
   //how much time to allocate for this move
   double time_for_move=time_for_this_move(root,player_id,time_remaining,enemy_time_remaining,move_accumulator.size());
-  printf("id_minimax debug 0, allocating %lf seconds to this move\n",time_for_move);
+//  printf("id_minimax debug 0, allocating %lf seconds to this move\n",time_for_move);
   
   //the <= here is so max_depth_limit is inclusive
   //in the case we're doing a time-limited version of this we don't want to stop on max depth limit
   for(int depth_limit=1; time_limit || (depth_limit<=max_depth_limit); depth_limit++)
   {
-    printf("id_minimax debug 1, getting a move from dl_minimax with depth limit %i, prune is %s\n", depth_limit, prune? "True" : "False");
+//    printf("id_minimax debug 1, getting a move from dl_minimax with depth limit %i, prune is %s\n", depth_limit, prune? "True" : "False");
     
     //make a new move accumulator to pass to the depth-limited call
     vector <_Move*> new_move_acc;
@@ -670,7 +670,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     double after=end_time.tv_sec+(end_time.tv_usec/1000000.0);
     time_used+=(after-before);
     
-    printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
+//    printf("id_minimax debug 2, time used for this move so far is %lf seconds\n",time_used);
     
     //estimate the time that will be required for the next iteration
     //and take into account whether we will possibly be able to finish another iteration
