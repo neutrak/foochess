@@ -1,17 +1,15 @@
-A few notes about this program at a high abstraction level.  
-
+Comments for the first assignment
   I made a Board class that stores a game state and has data to be a tree node later.  
   I modified AI to add a few functions and to call the new functions and board class as needed.  
   I made a _SuperPiece struct to hold some additional data for pieces (like movements).  
   I do an integrity check on every move I get from the server to ensure the master board in the AI class is never incorrect.  
   In order to count movements, the AI class stores the aforementioned "master" board throughout its life.  
 
-
 Additional comments for the second assignment
   The TreeSearch class implements the algorithms and has helper functions for doing so; I also moved generate_moves out of AI and into this.  
   AI.cpp currently uses a id dlmm depth limit of 3; 4 will also complete in a reasonable time but won't necessarily get to end-game in all cases; a long game will time out with 4.  
   The heuristic I used is weighted points; (node->informed_points(pid)*0.6)-(node->naive_points(!pid)) is the literal code.  This has the effect of trying to attack the enemy, but not making overly risky sacrifices to do so.  This will very consistently beat the random AI, but obviously I'll work improve it more.  Informed_points at the moment is just naive_points with an addition for when the enemy is in check.  
-  Since I cannot look 100 moves ahead, the 100 move stalemate still occasionally happens; it will be detected by the AI, but in some cases insufficient action can be taken to get out of it by the time it's 3 moves away.  
+  Since I cannot look 100 moves ahead, the 100 move stalemate still occasionally happens; it will be detected by the AI, but in some cases insufficient action can be taken to get out of it by the time it's 3 moves away.
 
 Additional comments for the third assignment
   there is a time_for_this_move function in the TreeSearch class; I also estimated the minimum time it would take to do another iteration within id_minimax and factored that in
@@ -37,4 +35,6 @@ Additional comments for the fourth assignment
     every so many moves the old history table is discarded and a new one is started, in case moves that were good earlier are no longer as good
     this is a couple of lines in AI.cpp that delete the old one and make a new one when move_count%(constant)==0; or every <constant> moves
   the time allocation is changed now so that if the enemy has used much more time than us and we are losing, more time will be allocated to [hopefully] catch up
+  I have made a new heuristic called INFORMED_DANGER which usually beats the old heuristic, but not always (you can run them against each other by means of the input prompts in init)
+    I AM APPLYING FOR THE HEURISTIC BONUS WITH THIS NEW HEURISTIC
 
