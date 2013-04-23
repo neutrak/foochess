@@ -273,29 +273,43 @@ void Board::history_order_children(HistTable *hist)
   //DEFENSIVE, we should never be passed null into here
   if(hist!=NULL)
   {
-    quicksort_children(0,children.size()-1,hist);
+    quicksort_children(0,children.size()-1,hist,0,true,HEURISTIC_COUNT);
   }
 }
 
+//order children by heursitic values
+void Board::heuristic_order_children(int player_id, bool max, heuristic heur)
+{
+  quicksort_children(0,children.size()-1,NULL,player_id,max,heur);
+}
+
 //an in-place quicksort implementation, sorting by history table values
-void Board::quicksort_children(int lower_bound, int upper_bound, HistTable *hist)
+void Board::quicksort_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur)
 {
   if(lower_bound<upper_bound)
   {
     int pivot_index=(upper_bound+lower_bound)/2;
 //    int pivot_index=lower_bound;
     
-    pivot_index=quicksort_partition_children(lower_bound,upper_bound,hist,pivot_index);
+    pivot_index=quicksort_partition_children(lower_bound,upper_bound,hist,player_id,max,heur,pivot_index);
     
-    quicksort_children(lower_bound, pivot_index-1, hist);
-    quicksort_children(pivot_index+1, upper_bound, hist);
+    quicksort_children(lower_bound, pivot_index-1, hist, player_id, max, heur);
+    quicksort_children(pivot_index+1, upper_bound, hist, player_id, max, heur);
   }
 }
 
 //quicksort helper
-int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int pivot_index)
+int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur, int pivot_index)
 {
-  int pivot_value=hist->get_value(children[pivot_index]);
+  double pivot_value;
+  if(hist!=NULL)
+  {
+    pivot_value=hist->get_value(children[pivot_index]);
+  }
+  else
+  {
+    pivot_value=children[pivot_index]->heuristic_value(player_id,max,heur);
+  }
   
   //a swap operation, swapping pivot index and upper bound elements
   swap_children(upper_bound,pivot_index);
@@ -305,7 +319,18 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTa
   //NOTE: the upper_bound we were passed in is inclusive; we just swapped pivot_index with that element
   for(int i=lower_bound; i<upper_bound; i++)
   {
-    if(hist->get_value(children[i])>=pivot_value)
+    double child_value;
+    if(hist!=NULL)
+    {
+      child_value=hist->get_value(children[i]);
+    }
+    else
+    {
+      child_value=children[i]->heuristic_value(player_id,max,heur);
+    }
+    
+    //the >= is to max sort here
+    if(child_value>=pivot_value)
     {
       swap_children(i,store_index);
       store_index++;
@@ -1281,6 +1306,83 @@ double Board::points(int player_id, bool informed, bool attack_ability)
   return point_accumulator;
 }
 
+
+double Board::informed_danger_heuristic(int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (points(pid,true,true)*0.75)-(points(!pid,true,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
+}
+
+double Board::informed_attack_heuristic(int player_id, bool max)
+{
+  //a local player id
+  //the heuristic is always calculated with respect to the max player
+  //if the max player is not at move, calculate with respect to it anyway
+  int pid=max? player_id : !player_id;
+  
+//  return points(pid,true,true); //keep ourselves alive above all else
+//  return ((points(pid,true,true))-(points(!pid,true,true))); //make us have a higher score than the enemy above all else
+//  return -(points(!pid,true,true)); //kill the enemy above all else
+  return (points(pid,true,false)*0.7)-(points(!pid,true,false)); //kill the enemy but don't sacrifice everything to accomplish that
+}
+
+double Board::informed_defend_heuristic(int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (points(pid,true,false))-(points(!pid,true,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
+}
+
+double Board::naive_attack_heuristic(int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (points(pid,false,false)*0.7)-(points(!pid,false,false)); //kill the enemy but don't sacrifice everything to accomplis that
+}
+
+double Board::naive_defend_heuristic(int player_id, bool max)
+{
+  //player id of max player
+  int pid=max? player_id : !player_id;
+  
+  return (points(pid,false,false))-(points(!pid,false,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
+}
+
+//a general heuristic function to call, with a parameter for which heuristic to use
+double Board::heuristic_value(int player_id, bool max, heuristic heur)
+{
+  double heur_value=0.0;
+  
+  switch(heur)
+  {
+    case INFORMED_DANGER:
+      heur_value=informed_danger_heuristic(player_id,max);
+      break;
+    case INFORMED_ATTACK:
+      heur_value=informed_attack_heuristic(player_id,max);
+      break;
+    case INFORMED_DEFEND:
+      heur_value=informed_defend_heuristic(player_id,max);
+      break;
+    case NAIVE_ATTACK:
+      heur_value=naive_attack_heuristic(player_id,max);
+      break;
+    case NAIVE_DEFEND:
+      heur_value=naive_defend_heuristic(player_id,max);
+      break;
+    //in case we didn't get anything above, use a default heuristic
+    default:
+      heur_value=informed_attack_heuristic(player_id,max);
+      break;
+  }
+  
+  return heur_value;
+}
+
 //this is a count of how many tiles on the board are attackable by the given player
 //it's something I'm playing with as part of heuristic calculation
 double Board::board_ownership(int player_id)
@@ -1313,6 +1415,36 @@ bool Board::quiescent()
   {
     return false;
   }
+  
+/*
+  //the max number of points being "attacked" before this stated is considered non-quiescent
+  //NOTE: this is for BOTH PLAYERS IN TOTAL, not per player
+  double quiescent_attack_point_threshold=14.0;
+  
+  //the accumulator for the above noted bound condition
+  double points_attacked=0.0;
+  
+  for(int f=1; f<=width; f++)
+  {
+    for(int r=1; r<=height; r++)
+    {
+      if(get_element(f,r)!=NULL)
+      {
+        //if this piece can be attacked here (except a few weird cases like en passants)
+        if(in_check(f,r,get_element(f,r)->owner))
+        {
+          points_attacked+=point_value(get_element(f,r)->type);
+        }
+      }
+    }
+  }
+  
+  //if a bunch of stuff is being attacked this is not a quiescent state
+  if(points_attacked >= quiescent_attack_point_threshold)
+  {
+    return false;
+  }
+*/
   
   //if none of the conditions for non-quiescent states were met, this /is/ a quiescent state
   return true;

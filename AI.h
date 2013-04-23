@@ -10,29 +10,6 @@
 #include "Board.h"
 using namespace std;
 
-enum algorithm
-{
-  USER, //let the user actually play
-  RANDOM, //random
-  ID_DLMM, //iterative-deepening depth-limited minimax
-  TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
-  QS_TL_AB_ID_DLMM, //quiescent search extensions added to TL_AB_ID_DLMM
-  HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
-  
-  ALGO_COUNT
-};
-
-enum heuristic
-{
-  INFORMED_DANGER, //informed_points with some flags set, should add for "safe" owned pieces and "unsafe" enemy pieces
-  INFORMED_ATTACK, //informed_points base, weight capture of enemy pieces above preservation of own pieces
-  INFORMED_DEFEND, //informed_points base, weight preservation of own pieces above capture of enemy pieces
-  NAIVE_ATTACK, //naive_points base, weight capture more
-  NAIVE_DEFEND, //naive_points base, weight preservation more
-  
-  HEURISTIC_COUNT
-};
-
 ///The class implementing gameplay logic.
 class AI: public BaseAI
 {

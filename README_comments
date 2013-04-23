@@ -16,12 +16,6 @@ Additional comments for the third assignment
   minimax returns early from recursive calls as soon as it runs out of time
   there is a prompt for user-specified algorithm and heuristic use, with a timeout in case the code is run on the arena
 
-Modifications and additions for the fourth assignment (in response to grader feedback)
-  I removed the check for opponent in checkmate when opponent isn't at move in the general minimax function, as requested
-  I removed the king count from points calculations
-  Immediate checkmates are now accounted for, as noted in my previous comments; this prevents trying to go along a path to a further away checkmate when an immediate one exists
-    The history table would have largely dimished this effect anyway, but just to be safe
-
 Additional comments for the fourth assignment
   I renamed my general min or max function to just min_or_max for clarity/ease
   non-quiescent search is done by setting the quiescent depth limit to 0, rather than another boolean argument
@@ -36,5 +30,11 @@ Additional comments for the fourth assignment
     this is a couple of lines in AI.cpp that delete the old one and make a new one when move_count%(constant)==0; or every <constant> moves
   the time allocation is changed now so that if the enemy has used much more time than us and we are losing, more time will be allocated to [hopefully] catch up
   I have made a new heuristic called INFORMED_DANGER which usually beats the old heuristic, but not always (you can run them against each other by means of the input prompts in init)
-    I AM APPLYING FOR THE HEURISTIC BONUS WITH THIS NEW HEURISTIC
+
+Modifications and additions for the fourth assignment resubmission (in response to grader feedback)
+  ()
+
+Additional comments for the fourth assignment resubmission
+  I have added a beam search that only follows the best k moves for some constant k (at time of writing this is set to 15 in the call, but that may change)
+
 

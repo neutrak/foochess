@@ -1,14 +1,16 @@
-Your code is really good.  Everything basically works right.  But you've added in things that are totally unneccessary and useless.  
+In your README, you said you were applying for the heuristic bonus again for this assignment.  However, it clearly says on the assignment page that you can't apply for the same bonus category in both phases.  Sorry. :(  
+You're welcome to apply for the other bonuses for the resubmission though.  I obviously didn't take off points for any of this other stuff, but you're welcome to read through it if you want to have more ideas for the tournament or just want to hear some ways you could improve your coding in general.  
 
-//For example, you were explicitly told in the last assignment that only the player who is moving can possibly be in checkmate.  The player who isn't currently at move can't possibly even be in check, so that whole first if statement in your minmaxpruning function is never true.  Get rid of it.  
+In your quicksort algorithm, you call the hist->getValue() function a lot for most entries in your array, and that can eat up a lot of time depending on how effective your hash function is/how big your history table is.  
+I'm sure there's a more efficient way to sort them (maybe store the values after a single call to hist->getValue() ).  
 
-//Also, when counting pieces, the two kings are guaranteed to always be on the board, so there's no point in giving them point values to add to the sum.  
+Your Board::quiescent() function is pretty sparse, but at least it shows that you get the idea.  Perhaps other things to take into consideration would be if a lot of pieces are under attack (especially queens or rooks).  
+In the middle of a chess game, most of the action takes place away from the kings.  Right now, your function is exploring only 1 depth throughout most of the game.  
 
-//Also on the check note, in your informed_points heuristic, the player who is making the move to the new state you're evaluating can't be in check.  That would make it an illegal move.  So you don't need the !get_check(player_id) at all.  
+If you watch any of your games, it will become apparent that this makes your AI play terribly.  
 
-Your different heuristics for the bonus are decent.  Not exactly revolutionary compared to the original point value heuristic, but it is an improvement it seems.  I think you could expand on it even more to make it very good.  
+Generally, your default depth should be pretty high if you identify lots of states as quiescent (as you do), and lower if quiescent states are relatively rare.  
 
-//You had a note in your readme about checkmates at different depths.  I agree with the idea of stopping at the current depth if you find a guaranteed checkmate, but if you've found multiple paths for which minimax has found you putting your opponent in checkmate, then all of those paths are guaranteed to lead to checkmate, and it really doesn't matter which one you follow.  
+In any case, this is all just a matter of your parameter settings.  The algorithm itself seems to be solid.
 
-Last note, you seem to have left your debugging output statements on, so the terminal is just spewing text while your algorithm runs.  
 

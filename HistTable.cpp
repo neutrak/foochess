@@ -16,10 +16,13 @@ int HistTable::hash(_HistMove* hist_move)
     return 0;
   }
   
-  //the from postion gets added to the hash
-  hash+=((hist_move->fromFile) + (hist_move->fromRank));
-  //the to position with a bitshift offset gets added to the hash
-  hash+=(((hist_move->toFile) + (hist_move->toRank)) << 3);
+  //the from postion gets added to the hash, bit shifts for more unique hashes
+  hash+=(hist_move->fromFile);
+  hash+=(hist_move->fromRank) << 3;
+  
+  //the to position, bit shifts here for same reason
+  hash+=(hist_move->toFile) << 6;
+  hash+=(hist_move->toRank) << 9;
   
   //captures result in multiplcation with the captured type
   if(hist_move->capture)

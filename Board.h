@@ -7,6 +7,30 @@
 #include <vector>
 using namespace std;
 
+enum algorithm
+{
+  USER, //let the user actually play
+  RANDOM, //random
+  ID_DLMM, //iterative-deepening depth-limited minimax
+  TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
+  QS_TL_AB_ID_DLMM, //quiescent search extensions added to TL_AB_ID_DLMM
+  HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
+  BEAM_HT_QS_TL_AB_ID_DLMM, //like above with beam search added
+  
+  ALGO_COUNT
+};
+
+enum heuristic
+{
+  INFORMED_DANGER, //informed_points with some flags set, should add for "safe" owned pieces and "unsafe" enemy pieces
+  INFORMED_ATTACK, //informed_points base, weight capture of enemy pieces above preservation of own pieces
+  INFORMED_DEFEND, //informed_points base, weight preservation of own pieces above capture of enemy pieces
+  NAIVE_ATTACK, //naive_points base, weight capture more
+  NAIVE_DEFEND, //naive_points base, weight preservation more
+  
+  HEURISTIC_COUNT
+};
+
 class HistTable;
 
 //bounds for heuristic values; it's needed a few places
@@ -77,10 +101,14 @@ public:
   void shuffle_children();
   //order children by history table values, given a history table to use
   void history_order_children(HistTable *hist);
+  //order children by heursitic values
+  void heuristic_order_children(int player_id, bool max, heuristic heur);
+  
   //an in-place quicksort implementation, sorting by history table values
-  void quicksort_children(int lower_bound, int upper_bound, HistTable *hist);
+  //NOTE: if hist is NULL, heuristic gets used to sort instead
+  void quicksort_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur);
   //quicksort helper
-  int quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int pivot_index);
+  int quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur, int pivot_index);
   
   //display whatever the current state of the board is
   void output_board();
@@ -137,6 +165,16 @@ public:
   //when informed is false just point values as commonly defined
   //when informed is true position is taken into account, etc.
   double points(int player_id, bool informed, bool attack_ability);
+  
+  //the heuristics we'll be using for minimax
+  double informed_danger_heuristic(int player_id, bool max);
+  double informed_attack_heuristic(int player_id, bool max);
+  double informed_defend_heuristic(int player_id, bool max);
+  double naive_attack_heuristic(int player_id, bool max);
+  double naive_defend_heuristic(int player_id, bool max);
+  
+  //a general heuristic function to call, with a parameter for which heuristic to use
+  double heuristic_value(int player_id, bool max, heuristic heur);
   
   //this is a count of how many tiles on the board are attackable by the given player
   //it's something I'm playing with as part of heuristic calculation
