@@ -309,6 +309,12 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTa
   else
   {
     pivot_value=children[pivot_index]->heuristic_value(player_id,max,heur);
+    
+    //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
+    if(!max)
+    {
+      pivot_value=(-pivot_value);
+    }
   }
   
   //a swap operation, swapping pivot index and upper bound elements
@@ -327,6 +333,12 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTa
     else
     {
       child_value=children[i]->heuristic_value(player_id,max,heur);
+      
+      //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
+      if(!max)
+      {
+        child_value=(-child_value);
+      }
     }
     
     //the >= is to max sort here

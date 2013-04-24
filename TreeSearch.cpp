@@ -353,7 +353,7 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
     free_move_acc(move_accumulator);
     //this isn't great, but it's not that bad either
 //    return AVG(HEURISTIC_MINIMUM,HEURISTIC_MAXIMUM);
-    return -15.0;
+    return -9.0;
   }
   //if we hit the depth limit, use the heuristic
   //if this is a quiescent state or we've hit the quiscent search depth limit also
@@ -639,8 +639,8 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     //and take into account whether we will possibly be able to finish another iteration
     //if we don't think there's any real chance we can finish it don't bother starting it; this will save us some valuable play time for later
     
-    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 2 as a VERY optimistic branch factor
-    double time_for_next=2*(after-before);
+    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 4 as a VERY optimistic branch factor
+    double time_for_next=4*(after-before);
     
 /*
     //the next iteration will almost always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
