@@ -66,13 +66,13 @@ void AI::init()
 //  algo=TL_AB_ID_DLMM;
 //  algo=QS_TL_AB_ID_DLMM;
 //  algo=HT_QS_TL_AB_ID_DLMM;
-  algo=BEAM_QS_TL_AB_ID_DLMM;
-//  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
+//  algo=BEAM_QS_TL_AB_ID_DLMM;
+  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
   
   heur=INFORMED_DANGER;
   
   //let the user pick an algorithm and heuristic, with a timeout in case this is run on the arena
-  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, QS_TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM, BEAM_HT_QS_TL_AB_ID_DLMM): ");
+  printf("Enter an algorithm to use (options are USER, RANDOM, ID_DLMM, TL_AB_ID_DLMM, QS_TL_AB_ID_DLMM, HT_QS_TL_AB_ID_DLMM, BEAM_QS_TL_AB_ID_DLMM, BEAM_HT_QS_TL_AB_ID_DLMM): ");
   fflush(stdout);
   
   char algo_choice[512];
