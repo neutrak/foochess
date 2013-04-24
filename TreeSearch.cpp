@@ -259,7 +259,7 @@ double TreeSearch::time_for_this_move(Board *board, int player_id, double time_r
     //really look forward this move
     //if this uses too much time
     //then on the next move we won't be ahead in time and the above condition won't trigger
-    moves_remaining/=1.5;
+    moves_remaining/=2;
   }
   
   //distribute time evenly according to how many moves we think we have left to make
@@ -294,11 +294,13 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //a helper for beam search
 void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id, bool max, heuristic heur)
 {
+//  printf("TreeSearch::beam_prune debug 0, initial children size is %lu\n",node->get_children().size());
+  
   //if we're doing a beam search and there are children to consider
   if(beam_width>0 && !(node->get_children().empty()))
   {
     //if this is a case to forward prune, remove all but the best k children (k==beam_width)
-    if(beam_width>node->get_children().size())
+    if(beam_width < node->get_children().size())
     {
       //order children by heuristic, so the first n children are the best n children
       node->heuristic_order_children(player_id,max,heur);
@@ -308,9 +310,11 @@ void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id,
         delete node->get_children()[i];
       }
       
-      node->get_children().resize(beam_width);
+      node->resize_children(beam_width);
     }
   }
+  
+//  printf("TreeSearch::beam_prune debug 1, new children size is %lu\n",node->get_children().size());
 }
 
 //helper functions for depth-limited minimax
@@ -326,16 +330,16 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
   //generate children for the given node
   generate_moves(node,player_id);
   
-  beam_prune(node,beam_width,player_id,max,heur);
-  
-  if(hist==NULL)
+  if(beam_width==0)
   {
     node->shuffle_children();
   }
+  
+  beam_prune(node,beam_width,player_id,max,heur);
+  
   //when a history table is being used, order children by history table values
-  else
+  if(hist!=NULL)
   {
-    node->shuffle_children();
     node->history_order_children(hist);
   }
   
@@ -474,18 +478,18 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   //this is done as a side-effect of move generation
   generate_moves(root, player_id);
   
-  beam_prune(root,beam_width,player_id,true,heur);
-  
-  if(hist==NULL)
+  //board->shuffle_children randomizes children (created by applying moves)
+  //so nodes with equal heuristic values don't always get taken in the same order
+  if(beam_width==0)
   {
-    //board->shuffle_children randomizes children (created by applying moves)
-    //so nodes with equal heuristic values don't always get taken in the same order
     root->shuffle_children();
   }
+  
+  beam_prune(root,beam_width,player_id,true,heur);
+  
   //when a history table is being used, order children by history table values
-  else
+  if(hist!=NULL)
   {
-    root->shuffle_children();
     root->history_order_children(hist);
   }
   

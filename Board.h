@@ -15,7 +15,8 @@ enum algorithm
   TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
   QS_TL_AB_ID_DLMM, //quiescent search extensions added to TL_AB_ID_DLMM
   HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
-  BEAM_HT_QS_TL_AB_ID_DLMM, //like above with beam search added
+  BEAM_QS_TL_AB_ID_DLMM, //beam search for the qs thing above
+  BEAM_HT_QS_TL_AB_ID_DLMM, //beam search, history table, etc.
   
   ALGO_COUNT
 };
@@ -86,6 +87,7 @@ public:
   
   //accessors
   vector<Board*> get_children(){ return children; }
+  void resize_children(unsigned int new_size){ children.resize(new_size); }
   _Move *get_last_move_made(){ return last_move_made; }
   bool get_check(int player_id){ return (player_id==WHITE) ? white_check : black_check; }
   int get_moves_since_capture(){ return moves_since_capture; }

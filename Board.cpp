@@ -1259,13 +1259,26 @@ double Board::points(int player_id, bool informed, bool attack_ability)
         //below this is all various types of "informed" piece counting
         if(informed)
         {
-          //if this position is past the center line ("past the center" depends on who is at play)
-          if((player_id==WHITE && r>=5) || (player_id==BLACK && r<=4))
+          if(get_element(f,r)->owner==player_id && get_element(f,r)->type=='P')
           {
-            if(get_element(f,r)->owner==player_id && get_element(f,r)->type=='P')
+            //if this position is past the center line ("past the center" depends on who is at play)
+            //add a value proportional to how far away the pawn is from the end
+            
+            if(player_id==WHITE && r>=5)
+            {
+              point_accumulator+=(4-(8-r));
+            }
+            else if(player_id==BLACK && r<=4)
+            {
+              point_accumulator+=(5-r);
+            }
+            
+/*
+            if((player_id==WHITE && r>=5) || (player_id==BLACK && r<=4))
             {
               point_accumulator+=1;
             }
+*/
           }
         }
         
@@ -1388,7 +1401,7 @@ double Board::heuristic_value(int player_id, bool max, heuristic heur)
       break;
     //in case we didn't get anything above, use a default heuristic
     default:
-      heur_value=informed_attack_heuristic(player_id,max);
+      heur_value=informed_danger_heuristic(player_id,max);
       break;
   }
   
