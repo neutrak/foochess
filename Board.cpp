@@ -1441,6 +1441,12 @@ bool Board::quiescent()
     return false;
   }
   
+  //if the last move was a capture this is not a quiescent state
+  if(moves_since_capture==0)
+  {
+    return false;
+  }
+  
 /*
   //the max number of points being "attacked" before this stated is considered non-quiescent
   //NOTE: this is for BOTH PLAYERS IN TOTAL, not per player
