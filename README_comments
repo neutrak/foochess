@@ -32,9 +32,10 @@ Additional comments for the fourth assignment
   I have made a new heuristic called INFORMED_DANGER which usually beats the old heuristic, but not always (you can run them against each other by means of the input prompts in init)
 
 Modifications and additions for the fourth assignment resubmission (in response to grader feedback)
-  ()
+  I changed a few constants here and there, nothing major, don't worry about it
 
 Additional comments for the fourth assignment resubmission
   I have added a beam search that only follows the best k moves for some constant k (at time of writing this is set to 15 in the call, but that may change)
+  If foward-pruning counts as extra credit, I am applying for that.  Since this wasn't noted on the game page I'm not counting on it.  Personally, I feel it should be worth 5% extra credit.  
 
 
