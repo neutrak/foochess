@@ -72,6 +72,9 @@ private:
   Board *p;
   vector<Board*> children;
   
+  //value to sort by when we are a child of another board
+  double sorting_value;
+  
 public:
   //constructor, makes board internal structures based off of the data I'm given
   Board(vector<Piece> pieces, Board *parent);
@@ -93,6 +96,8 @@ public:
   int get_moves_since_capture(){ return moves_since_capture; }
   int get_moves_since_advancement(){ return moves_since_advancement; }
   int get_last_capture_type(){ return last_capture_type; }
+  double get_sorting_value(){ return sorting_value; }
+  void set_sorting_value(double s){ sorting_value=s; }
   
   //deal with other nodes in the structure
   void add_child(Board *board);
@@ -106,11 +111,10 @@ public:
   //order children by heursitic values
   void heuristic_order_children(int player_id, bool max, heuristic heur);
   
-  //an in-place quicksort implementation, sorting by history table values
-  //NOTE: if hist is NULL, heuristic gets used to sort instead
-  void quicksort_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur);
+  //an in-place quicksort implementation, sorting by sorting_value values of children (which can be set as anything)
+  void quicksort_children(int lower_bound, int upper_bound);
   //quicksort helper
-  int quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur, int pivot_index);
+  int quicksort_partition_children(int lower_bound, int upper_bound, int pivot_index);
   
   //display whatever the current state of the board is
   void output_board();

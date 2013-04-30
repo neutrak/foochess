@@ -8,6 +8,7 @@ Board::Board(vector<Piece> pieces, Board *parent)
 {
   white_check=false;
   black_check=false;
+  sorting_value=0;
   
   //set the parent we were given (for root node this should be NULL)
   p=parent;
@@ -89,6 +90,7 @@ Board::Board(Board *board)
   //get the check information from the old board
   white_check=board->white_check;
   black_check=board->black_check;
+  sorting_value=0;
   
   //this is the child of the board it was copied from
   p=board;
@@ -273,49 +275,55 @@ void Board::history_order_children(HistTable *hist)
   //DEFENSIVE, we should never be passed null into here
   if(hist!=NULL)
   {
-    quicksort_children(0,children.size()-1,hist,0,true,HEURISTIC_COUNT);
+    //set sorting values based on history table, then do a quicksort
+    for(size_t i=0; i<children.size(); i++)
+    {
+      children[i]->set_sorting_value(hist->get_value(children[i]));
+    }
+    
+    quicksort_children(0,children.size()-1);
   }
 }
 
 //order children by heursitic values
 void Board::heuristic_order_children(int player_id, bool max, heuristic heur)
 {
-  quicksort_children(0,children.size()-1,NULL,player_id,max,heur);
+  //set sorting values based on heuristic, then do a quicksort
+  for(size_t i=0; i<children.size(); i++)
+  {
+    double child_value=children[i]->heuristic_value(player_id,max,heur);
+    
+    //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
+    if(!max)
+    {
+      child_value=(-child_value);
+    }
+    
+    children[i]->set_sorting_value(child_value);
+  }
+  
+  quicksort_children(0,children.size()-1);
 }
 
 //an in-place quicksort implementation, sorting by history table values
-void Board::quicksort_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur)
+void Board::quicksort_children(int lower_bound, int upper_bound)
 {
   if(lower_bound<upper_bound)
   {
     int pivot_index=(upper_bound+lower_bound)/2;
 //    int pivot_index=lower_bound;
     
-    pivot_index=quicksort_partition_children(lower_bound,upper_bound,hist,player_id,max,heur,pivot_index);
+    pivot_index=quicksort_partition_children(lower_bound,upper_bound,pivot_index);
     
-    quicksort_children(lower_bound, pivot_index-1, hist, player_id, max, heur);
-    quicksort_children(pivot_index+1, upper_bound, hist, player_id, max, heur);
+    quicksort_children(lower_bound, pivot_index-1);
+    quicksort_children(pivot_index+1, upper_bound);
   }
 }
 
 //quicksort helper
-int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTable *hist, int player_id, bool max, heuristic heur, int pivot_index)
+int Board::quicksort_partition_children(int lower_bound, int upper_bound, int pivot_index)
 {
-  double pivot_value;
-  if(hist!=NULL)
-  {
-    pivot_value=hist->get_value(children[pivot_index]);
-  }
-  else
-  {
-    pivot_value=children[pivot_index]->heuristic_value(player_id,max,heur);
-    
-    //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
-    if(!max)
-    {
-      pivot_value=(-pivot_value);
-    }
-  }
+  double pivot_value=children[pivot_index]->get_sorting_value();
   
   //a swap operation, swapping pivot index and upper bound elements
   swap_children(upper_bound,pivot_index);
@@ -325,21 +333,7 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, HistTa
   //NOTE: the upper_bound we were passed in is inclusive; we just swapped pivot_index with that element
   for(int i=lower_bound; i<upper_bound; i++)
   {
-    double child_value;
-    if(hist!=NULL)
-    {
-      child_value=hist->get_value(children[i]);
-    }
-    else
-    {
-      child_value=children[i]->heuristic_value(player_id,max,heur);
-      
-      //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
-      if(!max)
-      {
-        child_value=(-child_value);
-      }
-    }
+    double child_value=children[i]->get_sorting_value();
     
     //the >= is to max sort here
     if(child_value>=pivot_value)

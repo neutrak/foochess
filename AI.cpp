@@ -65,9 +65,9 @@ void AI::init()
 //  algo=ID_DLMM;
 //  algo=TL_AB_ID_DLMM;
 //  algo=QS_TL_AB_ID_DLMM;
-//  algo=HT_QS_TL_AB_ID_DLMM;
+  algo=HT_QS_TL_AB_ID_DLMM;
 //  algo=BEAM_QS_TL_AB_ID_DLMM;
-  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
+//  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
   
   heur=INFORMED_DANGER;
   
@@ -129,7 +129,7 @@ void AI::init()
     fflush(stdout);
     
     char heur_choice[512];
-    if(tl_input(heur_choice,512,10))
+    if(tl_input(heur_choice,512,8))
     {
       if(!strcmp(heur_choice,"INFORMED_DANGER"))
       {
@@ -330,13 +330,13 @@ _Move *AI::ai_move(Board *board, double time_remaining, double enemy_time_remain
     else if(algo==BEAM_QS_TL_AB_ID_DLMM)
     {
       printf("AI::ai_move() debug 0.5, making beam-search quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,playerID(),move_accumulator,heur,true,true,NULL,9,time_remaining,enemy_time_remaining);
+      move=ts.id_minimax(board,1,3,playerID(),move_accumulator,heur,true,true,NULL,12,time_remaining,enemy_time_remaining);
     }
 
     else if(algo==BEAM_HT_QS_TL_AB_ID_DLMM)
     {
       printf("AI::ai_move() debug 0.5, making beam-search history-table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,playerID(),move_accumulator,heur,true,true,hist,9,time_remaining,enemy_time_remaining);
+      move=ts.id_minimax(board,1,3,playerID(),move_accumulator,heur,true,true,hist,12,time_remaining,enemy_time_remaining);
     }
   }
   return move;

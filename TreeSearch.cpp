@@ -330,7 +330,11 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
   //generate children for the given node
   generate_moves(node,player_id);
   
-  node->shuffle_children();
+  //if we're not going to do a beam search, do some randomization
+  if(beam_width==0)
+  {
+    node->shuffle_children();
+  }
   
   beam_prune(node,beam_width,player_id,max,heur);
   
@@ -475,9 +479,13 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   //this is done as a side-effect of move generation
   generate_moves(root, player_id);
   
-  //board->shuffle_children randomizes children (created by applying moves)
-  //so nodes with equal heuristic values don't always get taken in the same order
-  root->shuffle_children();
+  //if we're not going to do a beam search, do some randomization
+  if(beam_width==0)
+  {
+    //board->shuffle_children randomizes children (created by applying moves)
+    //so nodes with equal heuristic values don't always get taken in the same order
+    root->shuffle_children();
+  }
   
   beam_prune(root,beam_width,player_id,true,heur);
   
