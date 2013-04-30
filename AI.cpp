@@ -65,9 +65,9 @@ void AI::init()
 //  algo=ID_DLMM;
 //  algo=TL_AB_ID_DLMM;
 //  algo=QS_TL_AB_ID_DLMM;
-  algo=HT_QS_TL_AB_ID_DLMM;
+//  algo=HT_QS_TL_AB_ID_DLMM;
 //  algo=BEAM_QS_TL_AB_ID_DLMM;
-//  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
+  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
   
   heur=INFORMED_DANGER;
   
