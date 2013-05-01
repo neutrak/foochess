@@ -25,6 +25,7 @@ bool AI::tl_input(char *buffer, int buffer_size, int timeout)
   bzero(buffer,buffer_size);
   buffer[0]='\0';
   
+/*
   struct pollfd fd={STDIN_FILENO, POLLRDNORM, 0};
   
   //poll takes timeout in milliseconds, so we multiply by 1000 here
@@ -47,6 +48,7 @@ bool AI::tl_input(char *buffer, int buffer_size, int timeout)
     
     return success;
   }
+*/
   
   return false;
 }
@@ -332,7 +334,6 @@ _Move *AI::ai_move(Board *board, double time_remaining, double enemy_time_remain
       printf("AI::ai_move() debug 0.5, making beam-search quiescent-search time-limited alpha-beta pruned id minimax move\n");
       move=ts.id_minimax(board,1,3,playerID(),move_accumulator,heur,true,true,NULL,12,time_remaining,enemy_time_remaining);
     }
-
     else if(algo==BEAM_HT_QS_TL_AB_ID_DLMM)
     {
       printf("AI::ai_move() debug 0.5, making beam-search history-table quiescent-search time-limited alpha-beta pruned id minimax move\n");
