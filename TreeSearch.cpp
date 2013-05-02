@@ -250,7 +250,7 @@ double TreeSearch::time_for_this_move(Board *board, int player_id, double time_r
   double time_for_move;
   
   //how many moves we think will be after this one; we'll revise it in a second
-  double moves_remaining=50;
+  double moves_remaining=42;
   
   //if we're losing and can afford some time, allocate more time to this move, in the hopes of catching up
   //this naive_points heuristic is too simple for actual game use, but serves well enough here
@@ -259,7 +259,7 @@ double TreeSearch::time_for_this_move(Board *board, int player_id, double time_r
     //really look forward this move
     //if this uses too much time
     //then on the next move we won't be ahead in time and the above condition won't trigger
-    moves_remaining/=2;
+    moves_remaining/=4;
   }
   
   //distribute time evenly according to how many moves we think we have left to make
@@ -645,8 +645,8 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     //and take into account whether we will possibly be able to finish another iteration
     //if we don't think there's any real chance we can finish it don't bother starting it; this will save us some valuable play time for later
     
-    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 4 as a VERY optimistic branch factor
-    double time_for_next=4*(after-before);
+    //NOTE: this estimate is based on O(b^d) being the time complexity; thus b*(O(b^(d-1))) is used to compute it, figuring 2 as a VERY optimistic branch factor
+    double time_for_next=2*(after-before);
     
 /*
     //the next iteration will almost always take at least as long as this iteration did, since it'll have to check all those nodes, and probably many additional ones
