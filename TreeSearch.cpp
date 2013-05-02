@@ -250,7 +250,7 @@ double TreeSearch::time_for_this_move(Board *board, int player_id, double time_r
   double time_for_move;
   
   //how many moves we think will be after this one; we'll revise it in a second
-  double moves_remaining=42;
+  double moves_remaining=42.0;
   
   //if we're losing and can afford some time, allocate more time to this move, in the hopes of catching up
   //this naive_points heuristic is too simple for actual game use, but serves well enough here
@@ -259,7 +259,7 @@ double TreeSearch::time_for_this_move(Board *board, int player_id, double time_r
     //really look forward this move
     //if this uses too much time
     //then on the next move we won't be ahead in time and the above condition won't trigger
-    moves_remaining/=4;
+    moves_remaining/=4.0;
   }
   
   //distribute time evenly according to how many moves we think we have left to make
