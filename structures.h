@@ -4,7 +4,6 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
-struct Connection;
 struct _Move;
 struct _Piece;
 struct _Player;
@@ -12,7 +11,6 @@ struct _Player;
 
 struct _Move
 {
-  Connection* _c;
   int id;
   int fromFile;
   int fromRank;
@@ -22,7 +20,6 @@ struct _Move
 };
 struct _Piece
 {
-  Connection* _c;
   int id;
   int owner;
   int file;
@@ -32,7 +29,6 @@ struct _Piece
 };
 struct _Player
 {
-  Connection* _c;
   int id;
   char* playerName;
   float time;

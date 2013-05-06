@@ -1,7 +1,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "Piece.h"
+#include "structures.h"
 #include "SuperPiece.h"
 #include "HistTable.h"
 #include <vector>
@@ -76,8 +76,11 @@ private:
   double sorting_value;
   
 public:
-  //constructor, makes board internal structures based off of the data I'm given
-  Board(vector<Piece> pieces, Board *parent);
+  //constructor, makes board internal structures for a starting state
+  Board();
+  
+  //place a piece on the board given some information about the piece
+  void place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements);
   
   //copy constructor
   Board(Board *board);

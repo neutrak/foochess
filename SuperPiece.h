@@ -8,7 +8,6 @@ struct _SuperPiece;
 struct _SuperPiece
 {
   //from _Piece
-  Connection* _c;
   int id;
   int owner;
   int file;

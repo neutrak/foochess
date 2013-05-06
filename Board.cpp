@@ -3,15 +3,15 @@
 #include <stdlib.h>
 
 //constructor
-//makes internal structures based off of the information we're provided with
-Board::Board(vector<Piece> pieces, Board *parent)
+//makes internal structures based for a starting state
+Board::Board()
 {
   white_check=false;
   black_check=false;
   sorting_value=0;
   
-  //set the parent we were given (for root node this should be NULL)
-  p=parent;
+  //no parent if this is an initial board state
+  p=NULL;
   
   //first, NULL out the board
   for(int file=0; file<width; file++)
@@ -22,36 +22,60 @@ Board::Board(vector<Piece> pieces, Board *parent)
     }
   }
   
-  for(size_t i=0; i<pieces.size(); i++)
+  //pawn placement
+  for(int f=1; f<=width; f++)
   {
-    int file=(pieces[i]).file();
-    int rank=(pieces[i]).rank();
+    //place a new white pawn at the bottom of the board
+    place_piece(0,WHITE,f,2,false,'P',false,0);
+    //place a new black pawn at the top of the board
+    place_piece(0,BLACK,f,7,false,'P',false,0);
+  }
+  
+  //everything else
+  for(int f=1; f<=width; f++)
+  {
+    //if normal placement is true both black and white get the same type of piece at this file
+    //if it's false they get different pieces and have to be handled specially
+    bool normal_placement=true;
+    int type_to_place;
     
-    //defensive: bounds checking in case we're passed bad data
-    if(file>0 && file<=width && rank>0 && rank<=height)
+    switch(f)
     {
-      _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
-      if(new_piece==NULL)
-      {
-        fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
-        exit(1);
-      }
+      //rooks go at the ends
+      case 1:
+      case 8:
+        type_to_place='R';
+        break;
+      //then knights
+      case 2:
+      case 7:
+        type_to_place='N';
+        break;
+      //and finally bishops
+      case 3:
+      case 6:
+        type_to_place='B';
+        break;
       
-      new_piece->_c=NULL;
-      new_piece->id=pieces[i].id();
-      new_piece->file=pieces[i].file();
-      new_piece->rank=pieces[i].rank();
-      new_piece->hasMoved=pieces[i].hasMoved();
-      new_piece->type=pieces[i].type();
-      new_piece->owner=pieces[i].owner();
-      
-      //and of course nothing has yet been checked
-      new_piece->haveChecked=false;
-//      new_piece->movements=old_piece->movements;
-      new_piece->movements=0;
-      
-      //the -1 is to switch 1-indexing to 0-indexing
-      state[((rank-1)*width)+(file-1)]=new_piece;
+      //queen takes the color, king gets the other value
+      case 4:
+        place_piece(0,BLACK,f,8,false,'K',false,0);
+        place_piece(0,WHITE,f,1,false,'Q',false,0);
+        normal_placement=false;
+        break;
+      case 5:
+        place_piece(0,WHITE,f,1,false,'K',false,0);
+        place_piece(0,BLACK,f,8,false,'Q',false,0);
+        normal_placement=false;
+        break;
+      default:
+        break;
+    }
+    
+    if(normal_placement)
+    {
+      place_piece(0,WHITE,f,1,false,type_to_place,false,0);
+      place_piece(0,BLACK,f,8,false,type_to_place,false,0);
     }
   }
   
@@ -84,6 +108,31 @@ Board::Board(vector<Piece> pieces, Board *parent)
   }
 }
 
+//place a piece on the board given some information about the piece
+void Board::place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements)
+{
+    _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
+    if(new_piece==NULL)
+    {
+      fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
+      exit(1);
+    }
+    
+    new_piece->id=id;
+    new_piece->file=file;
+    new_piece->rank=rank;
+    new_piece->hasMoved=hasMoved;
+    new_piece->type=type;
+    new_piece->owner=owner;
+    
+    //and of course nothing has yet been checked
+    new_piece->haveChecked=haveChecked;
+    new_piece->movements=movements;
+    
+    //the -1 is to switch 1-indexing to 0-indexing
+    state[((rank-1)*width)+(file-1)]=new_piece;
+}
+
 //copy constructor
 Board::Board(Board *board)
 {
@@ -111,7 +160,6 @@ Board::Board(Board *board)
         _SuperPiece *old_piece=board->get_element(file+1, rank+1);
         
         //make an exact copy of the relevant data
-        new_piece->_c=old_piece->_c;
         new_piece->id=old_piece->id;
         new_piece->file=old_piece->file;
         new_piece->rank=old_piece->rank;
@@ -351,10 +399,10 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, int pi
 void Board::output_board()
 {
   // Print out the current board state
-  cout<<"   +---+---+---+---+---+---+---+---+"<<endl;
+  printf("   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=8; rank>0; rank--)
   {
-    cout<<"R"<<rank<<" |";
+    printf(" %lu |",rank);
     for(size_t file=1; file<=8; file++)
     {
       _SuperPiece *p=get_element(file,rank);
@@ -364,30 +412,30 @@ void Board::output_board()
           // Checks if the piece is black
           if(p->owner == 1)
           {
-            cout<<"*";
+            printf("*");
           }
           else
           {
-            cout<<" ";
+            printf(" ");
           }
           // prints the piece's type
-          cout<<(char)(p->type)<<" ";
+          printf("%c ",(char)(p->type));
       }
       else
       {
-        cout<<"   ";
+        printf("   ");
       }
-      cout<<"|";
+      printf("|");
     }
-    cout<<endl<<"   +---+---+---+---+---+---+---+---+"<<endl;
+    printf("\n   +---+---+---+---+---+---+---+---+\n");
   }
   
-  cout<<"   |";
+  printf("   |");
   for(size_t file=1; file<=8; file++)
   {
-    cout<<"F"<<file<<" |";
+    printf(" %c |",(char)(file-1+'a'));
   }
-  cout<<endl;
+  printf("\n");
 }
 
 //finds the king
@@ -640,8 +688,6 @@ _Move *Board::make_move(_SuperPiece *p, int to_file, int to_rank, int promote_ty
     exit(1);
   }
   
-  //connection is not something we're dealing with here
-  new_move->_c=NULL;
   //I'm not sure what the id is for in a move, so ignore it for now
   new_move->id=0;
   new_move->fromFile=p->file;
@@ -665,7 +711,6 @@ _Move *Board::copy_move(_Move *move)
   }
   
   //connection is not something we're dealing with here
-  new_move->_c=NULL;
   new_move->id=move->id;
   new_move->fromFile=move->fromFile;
   new_move->fromRank=move->fromRank;

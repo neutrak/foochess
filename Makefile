@@ -9,12 +9,7 @@ CXXFLAGS += -Wall
 #CPPFLAGS = -DSHOW_NETWORK
 #override CPPFLAGS += -DSHOW_WARNINGS
 
-override CPPFLAGS += -Isexp
-
-all: client
-
-submit: client
-	@echo "$(shell cd ..;sh submit.sh c)"
+all: foochess
 
 .PHONY: clean all subdirs
 
@@ -23,16 +18,10 @@ libclient_%.o: %.cpp *$(headers)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(objects) client libclient_network.o libclient_game.o libclient_getters.o libclient_util.o libclient.so
-	$(MAKE) -C sexp clean
+	rm -f $(objects) foochess
 
-client: $(objects) sexp/sexp.a
-	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -Wall -o client
-
-libclient.so: libclient_network.o libclient_game.o libclient_getters.o libclient_util.o sexp/libclient_sexp.a
-	$(CXX) -shared -Wl,-soname,libclient.so $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -o libclient.so
-
-sexp/sexp.a sexp/libclient_sexp.a:
-	$(MAKE) -C $(dir $@) $(notdir $@)
+foochess: $(objects)
+	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -Wall -o foochess
 
 -include $(deps)
+
