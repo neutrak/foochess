@@ -165,7 +165,8 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     //note this builds the array in reverse order to what's given
     //because I need to push_back as I go in tree generation
     vector<_Move*> move_accumulator;
-    for(int i=moves.size()-1; i>=0; i--)
+//    for(int i=moves.size()-1; i>=0; i--) //reverse-ordered moves
+    for(size_t i=0; i<moves.size(); i++) //correctly ordered moves
     {
       _Move *new_move=(_Move*)(malloc(sizeof(_Move)));
       if(new_move==NULL)
