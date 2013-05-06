@@ -72,39 +72,71 @@ void AI::init()
 
 _Move *AI::user_move(Board *board, int player_id)
 {
-  _Move *move=(_Move*)(malloc(sizeof(_Move)));
-  if(move==NULL)
-  {
-    fprintf(stderr,"Err: Out of RAM!? (malloc failed)");
-    exit(1);
-  }
+  //a buffer for the user to input something
+  char input_buffer[BUFFER_SIZE];
+  bzero(input_buffer,BUFFER_SIZE*sizeof(char));
   
-  move->id=0;
-  
-  do
+  _Move *player_move=NULL;
+  while(player_move==NULL)
   {
-    printf("Waiting for a move from the user... (expected format fromFile,fromRank toFile,toRank\\n)\nmove: ");
-    fscanf(stdin,"%i,%i %i,%i", &(move->fromFile), &(move->fromRank), &(move->toFile), &(move->toRank));
+    printf("Move (expected format <from file><from rank><to file><to rank>; for example a2a3 would move from location a,2 to location a,3) (quit to quit): ");
+    scanf("%s",input_buffer);
     
-    if(board->get_element(move->fromFile,move->fromRank)!=NULL && board->get_element(move->fromFile,move->fromRank)->type=='P')
+    printf("AI::user_move debug 0, input_buffer=\"%s\"\n",input_buffer);
+    if(!strncmp(input_buffer,"quit",BUFFER_SIZE))
     {
-      printf("pawn detected; promoteType: ");
-      //this temporary variable is needed because internally move->promoteType is an integer and I need to read it as a char
-      char promoteType;
-      fscanf(stdin,"%c", &promoteType); //TODO: figure out why this is non-blocking
-//      move->promoteType=promoteType;
-      move->promoteType='Q';
+      //NOTE: any memory we are using should be cleaned up by the kernel here...
+      exit(0);
+      break;
+    }
+    
+    //convert locations from characters to internal coordinate representation
+    int from_file=tolower(input_buffer[0])-'a'+1;
+    int from_rank=input_buffer[1]-'0';
+    int to_file=tolower(input_buffer[2])-'a'+1;
+    int to_rank=input_buffer[3]-'0';
+    
+    printf("main debug 0, got a move from %i,%i to %i,%i\n",from_file,from_rank,to_file,to_rank);
+    //NOTE: width and height are always 8, so this range is defined with constants
+    if(from_file>=1 && from_file<=8 && from_rank>=1 && from_rank<=8 && to_file>=1 && to_file<=8 && to_rank>=1 && to_rank<=8)
+    {
+      if(board->get_element(from_file,from_rank)!=NULL && board->get_element(from_file,from_rank)->owner==WHITE)
+      {
+        //TODO: verify this move is one of the ones that can be generated for that board for the player
+        char promote_type='Q';
+        if(board->get_element(from_file,from_rank)->type=='P' && to_rank==8)
+        {
+          bool valid_promotion=false;
+          while(!valid_promotion)
+          {
+            printf("Pawn detected, what would you like to promote to? (Queen, Rook, kNight, Bishop): ");
+            scanf("%s",input_buffer);
+            if(input_buffer[0]=='Q' || input_buffer[0]=='R' || input_buffer[0]=='N' || input_buffer[0]=='B')
+            {
+              valid_promotion=true;
+              promote_type=input_buffer[0];
+            }
+            else
+            {
+              printf("Err: Invalid promotion type, try again\n");
+            }
+          }
+        }
+        
+        player_move=board->make_move(board->get_element(from_file,from_rank),to_file,to_rank,promote_type);
+      }
+      else
+      {
+        printf("Err: Start location doesn't have a piece you own, try again\n");
+      }
     }
     else
     {
-      move->promoteType='Q';
+      printf("Err: Move was off of the board, try again\n");
     }
   }
-  //repeat getting a move until all points are within the bounds of the board
-  while(!(move->fromFile>=1 && move->fromFile<=8 && move->fromRank>=1 && move->fromRank<=8 && move->toFile>=1 && move->toFile<=8 && move->toRank>=1 && move->toRank<=8));
   
-  printf("AI::user_move() debug 0, move is (%i,%i) to (%i,%i) with promotion type %c\n",move->fromFile,move->fromRank,move->toFile,move->toRank,move->promoteType);
-  return move;
+  return player_move;
 }
 
 void AI::remember_move(_Move *m)

@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <poll.h>
 #include "Board.h"
+
+#define BUFFER_SIZE 1024
+
 using namespace std;
 
 ///The class implementing gameplay logic.
@@ -31,6 +34,9 @@ public:
   //time-limited input (timeout is in seconds)
   //returns true when input is recieved, false otherwise
   bool tl_input(char *buffer, int buffer_size, int timeout);
+  
+  //set the internal algorithm to be used for movements
+  void set_algo(algorithm a) { algo=a; }
   
   void init();
   
