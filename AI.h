@@ -27,9 +27,36 @@ private:
   
   //a move history
   vector <_Move*> moves;
+  
+  //treesearch settings
+  int max_depth;
+  int qs_depth;
+  bool ab_prune;
+  
+  //heurstic stuff
+  bool heur_pawn_additions;
+  bool heur_position_additions;
+  
+  //weight for opponent pieces and our pieces, respecitvely
+  double enemy_weight;
+  double owned_weight;
+  
+  //whether or not to time-limit
+  bool time_limit;
+  //how long the time should be if it is limited (in seconds)
+  double timeout;
+  
+  //(history table is NULL for no history table, so doesn't need to be a seperate setting)
+  
+  //how many nodes to keep after forward-pruning (0 for no forward pruning)
+  unsigned int beam_width;
+  
 public:
   AI();
   ~AI();
+  
+  //allow the user to change all the settings of this AI object
+  void configure(int player_id);
   
   //time-limited input (timeout is in seconds)
   //returns true when input is recieved, false otherwise
@@ -42,6 +69,8 @@ public:
   
   //store this move in the movement history
   void remember_move(_Move *m);
+  //access remembered moves
+  vector <_Move*> get_moves() { return moves; }
   
   _Move *user_move(Board *board, int player_id);
   

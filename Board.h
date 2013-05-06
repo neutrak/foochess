@@ -11,12 +11,7 @@ enum algorithm
 {
   USER, //let the user actually play
   RANDOM, //random
-  ID_DLMM, //iterative-deepening depth-limited minimax
-  TL_AB_ID_DLMM, //time-limited alpha-beta pruned iterative-deepening depth-limited minimax
-  QS_TL_AB_ID_DLMM, //quiescent search extensions added to TL_AB_ID_DLMM
-  HT_QS_TL_AB_ID_DLMM, //history table and quiescent search extensions added to TL_AB_ID_DLMM
-  BEAM_QS_TL_AB_ID_DLMM, //beam search for the qs thing above
-  BEAM_HT_QS_TL_AB_ID_DLMM, //beam search, history table, etc.
+  TREE_SEARCH, //any kind of tree search
   
   ALGO_COUNT
 };

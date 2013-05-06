@@ -225,6 +225,43 @@ bool TreeSearch::insufficient_material(Board *board, int player_id)
   return false;
 }
 
+bool TreeSearch::stalemate(Board *node, vector<_Move*> move_accumulator)
+{
+  //for each player
+  for(int player_id=0; player_id<2; player_id++)
+  {
+    //if there are no legal moves it's a stalemate
+    generate_moves(node,player_id);
+    if(node->get_children().empty())
+    {
+      node->clear_children();
+      return true;
+    }
+    node->clear_children();
+    
+    //if repetition has occured in such a way that it's a stalemate
+    if(node->get_moves_since_capture()>=8 && node->get_moves_since_advancement()>=8 && stalemate_by_repeat(move_accumulator))
+    {
+      return true;
+    }
+    
+    //if no pawn advancements or captures have occured in forever it's a stalemate
+    if(node->get_moves_since_capture()>=100 && node->get_moves_since_advancement()>=100)
+    {
+      return true;
+    }
+    
+    //if there's not enough pieces to checkmate it's a stalemate
+    if(insufficient_material(node,player_id))
+    {
+      return true;
+    }
+  }
+  
+  //it's not a slatemate if none of the above is true
+  return false;
+}
+
 //free the memory referenced by a move accumulator vector
 void TreeSearch::free_move_acc(vector <_Move*> move_accumulator)
 {

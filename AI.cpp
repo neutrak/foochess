@@ -6,10 +6,97 @@
 
 AI::AI()
 {
+  //make sane setting defaults
+  
+  //the history table this AI is using (NULL for none)
+  //(history table is NULL for no history table, so doesn't need to be a seperate setting)
+//  hist=new HistTable();
+  hist=NULL;
+  
+  //treesearch settings
+  max_depth=1;
+  qs_depth=3;
+  ab_prune=true;
+  
+  //heurstic stuff
+  heur_pawn_additions=true;
+  heur_position_additions=true;
+  
+  //weight for opponent pieces and our pieces, respecitvely
+  enemy_weight=1;
+  owned_weight=0.75;
+  
+  //whether or not to time-limit
+  time_limit=true;
+  //how long the time should be if it is limited
+  timeout=30.0;
+  
+  //how many nodes to keep after forward-pruning (0 for no forward pruning)
+  beam_width=12;
 }
 
 AI::~AI()
 {
+}
+
+//allow the user to change all the settings of this AI object
+void AI::configure(int player_id)
+{
+  char input_buffer[BUFFER_SIZE];
+  
+  printf("Configuring for %s player...\n",(player_id==WHITE)? "White" : "Black");
+  
+  bool selection_done=false;
+  while(!selection_done)
+  {
+    printf("Current algorithm is %s; change (Yes, No)? ",(algo==USER)? "USER" : (algo==RANDOM)? "RANDOM" : "TREE_SEARCH");
+    scanf("%s",input_buffer);
+    //always null-terminate
+    input_buffer[BUFFER_SIZE-1]='\0';
+    
+    if(tolower(input_buffer[0])=='y')
+    {
+      printf("New selection (USER, RANDOM, TREE_SEARCH): ");
+      scanf("%s",input_buffer);
+      input_buffer[BUFFER_SIZE-1]='\0';
+      
+      //make this input case-insensitive
+      for(unsigned int n=0; n<strlen(input_buffer); n++)
+      {
+        input_buffer[n]=tolower(input_buffer[n]);
+      }
+      
+      if(!strncmp(input_buffer,"user",BUFFER_SIZE))
+      {
+        algo=USER;
+      }
+      else if(!strncmp(input_buffer,"random",BUFFER_SIZE))
+      {
+        algo=RANDOM;
+      }
+      else if(!strncmp(input_buffer,"tree_search",BUFFER_SIZE))
+      {
+        algo=TREE_SEARCH;
+      }
+    }
+    else
+    {
+      selection_done=true;
+    }
+  }
+  
+  if(algo==TREE_SEARCH)
+  {
+    bool options_done=false;
+    while(!options_done)
+    {
+      //TODO: let the user set all tree search options here
+      options_done=true;
+    }
+  }
+  
+  //pretty formatting
+  printf("\n\n");
 }
 
 //time-limited input (timeout is in seconds)
@@ -20,7 +107,6 @@ bool AI::tl_input(char *buffer, int buffer_size, int timeout)
   bzero(buffer,buffer_size);
   buffer[0]='\0';
   
-/*
   struct pollfd fd={STDIN_FILENO, POLLRDNORM, 0};
   
   //poll takes timeout in milliseconds, so we multiply by 1000 here
@@ -43,7 +129,6 @@ bool AI::tl_input(char *buffer, int buffer_size, int timeout)
     
     return success;
   }
-*/
   
   return false;
 }
@@ -62,7 +147,7 @@ void AI::init()
   
   //TODO: generalize, remove this code
   //set algorithm and heuristic (temporary code)
-  algo=BEAM_HT_QS_TL_AB_ID_DLMM;
+  algo=TREE_SEARCH;
   heur=INFORMED_DANGER;
   
 //  algo=RANDOM;
@@ -78,8 +163,11 @@ _Move *AI::user_move(Board *board, int player_id)
   _Move *player_move=NULL;
   while(player_move==NULL)
   {
-    printf("Move (expected format <from file><from rank><to file><to rank>; for example a2a3 would move from location a,2 to location a,3) (quit to quit): ");
+    printf("Move Selection (expected format <from file><from rank><to file><to rank>; for example a2a3 would move from location a,2 to location a,3) (quit to quit)\n");
+    printf("Enter move: ");
     scanf("%s",input_buffer);
+    //always null-terminate
+    input_buffer[BUFFER_SIZE-1]='\0';
     
     printf("AI::user_move debug 0, input_buffer=\"%s\"\n",input_buffer);
     if(!strncmp(input_buffer,"quit",BUFFER_SIZE))
@@ -101,28 +189,51 @@ _Move *AI::user_move(Board *board, int player_id)
     {
       if(board->get_element(from_file,from_rank)!=NULL && board->get_element(from_file,from_rank)->owner==WHITE)
       {
-        //TODO: verify this move is one of the ones that can be generated for that board for the player
-        char promote_type='Q';
-        if(board->get_element(from_file,from_rank)->type=='P' && to_rank==8)
+        //verify this move is one of the ones that can be generated for that board for the player, if not make them try again
+        bool found_move=false;
+        vector<_Move*> possible_moves=TreeSearch::generate_moves(board,player_id);
+        for(size_t n=0; n<possible_moves.size(); n++)
         {
-          bool valid_promotion=false;
-          while(!valid_promotion)
+          //if the moves started in the same spot and ended in the same spot
+          if((from_file == possible_moves[n]->fromFile) && (from_rank == possible_moves[n]->fromRank) && (to_file == possible_moves[n]->toFile) && (to_rank == possible_moves[n]->toRank))
           {
-            printf("Pawn detected, what would you like to promote to? (Queen, Rook, kNight, Bishop): ");
-            scanf("%s",input_buffer);
-            if(input_buffer[0]=='Q' || input_buffer[0]=='R' || input_buffer[0]=='N' || input_buffer[0]=='B')
-            {
-              valid_promotion=true;
-              promote_type=input_buffer[0];
-            }
-            else
-            {
-              printf("Err: Invalid promotion type, try again\n");
-            }
+            found_move=true;
           }
         }
+        board->clear_children();
         
-        player_move=board->make_move(board->get_element(from_file,from_rank),to_file,to_rank,promote_type);
+        if(found_move)
+        {
+          char promote_type='Q';
+          if(board->get_element(from_file,from_rank)->type=='P' && to_rank==8)
+          {
+            bool valid_promotion=false;
+            while(!valid_promotion)
+            {
+              printf("Pawn detected, what would you like to promote to? (Queen, Rook, kNight, Bishop): ");
+              scanf("%s",input_buffer);
+              input_buffer[BUFFER_SIZE-1]='\0';
+              //case-insensitive
+              input_buffer[0]=tolower(input_buffer[0]);
+              
+              if(input_buffer[0]=='q' || input_buffer[0]=='q' || input_buffer[0]=='n' || input_buffer[0]=='b')
+              {
+                valid_promotion=true;
+                promote_type=toupper(input_buffer[0]);
+              }
+              else
+              {
+                printf("Err: Invalid promotion type, try again\n");
+              }
+            }
+          }
+          
+          player_move=board->make_move(board->get_element(from_file,from_rank),to_file,to_rank,promote_type);
+        }
+        else
+        {
+          printf("Err: Suggested move was illegal for your current state, try again\n");
+        }
       }
       else
       {
@@ -159,7 +270,7 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     printf("AI::ai_move() debug 0.5, making random move\n");
     move=TreeSearch::random_move(board,player_id);
   }
-  else if(algo==ID_DLMM || algo==TL_AB_ID_DLMM || algo==QS_TL_AB_ID_DLMM || algo==HT_QS_TL_AB_ID_DLMM || algo==BEAM_QS_TL_AB_ID_DLMM || algo==BEAM_HT_QS_TL_AB_ID_DLMM)
+  else if(algo==TREE_SEARCH)
   {
     //make a move accumulator to start it out based on the moves their API gives us
     //note this builds the array in reverse order to what's given
@@ -189,36 +300,16 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     TreeSearch ts;
     
     //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
-    if(algo==ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making id_minimax move\n");
-      move=ts.id_minimax(board,3,0,player_id,move_accumulator,heur,false,false,NULL,0,time_remaining,enemy_time_remaining);
-    }
-    else if(algo==TL_AB_ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,0,player_id,move_accumulator,heur,true,true,NULL,0,time_remaining,enemy_time_remaining);
-    }
-    else if(algo==QS_TL_AB_ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,NULL,0,time_remaining,enemy_time_remaining);
-    }
-    else if(algo==HT_QS_TL_AB_ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making history-table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,hist,0,time_remaining,enemy_time_remaining);
-    }
-    else if(algo==BEAM_QS_TL_AB_ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making beam-search quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,NULL,12,time_remaining,enemy_time_remaining);
-    }
-    else if(algo==BEAM_HT_QS_TL_AB_ID_DLMM)
-    {
-      printf("AI::ai_move() debug 0.5, making beam-search history-table quiescent-search time-limited alpha-beta pruned id minimax move\n");
-      move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,hist,12,time_remaining,enemy_time_remaining);
-    }
+    printf("AI::ai_move() debug 0.5, making tree search (id minimax) move\n");
+    
+    //declaration: static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining);
+    //default AI player
+//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,hist,12,time_remaining,enemy_time_remaining);
+    
+    //configured AI player
+    //TODO: replace heur with weight settings and heuristic options
+    //TODO: replace time_remaining with timeout values, ignored enemy_time_remaining
+    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,heur,ab_prune,time_limit,hist,beam_width,900,900);
   }
   return move;
 }
@@ -264,6 +355,7 @@ void AI::end()
   if(hist!=NULL)
   {
     delete hist;
+    hist=NULL;
   }
   
   //clear out the moves vector

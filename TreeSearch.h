@@ -35,6 +35,9 @@ public:
   //otherwise false
   static bool insufficient_material(Board *board, int player_id);
   
+  //stalemate check
+  static bool stalemate(Board *node, vector<_Move*> move_accumulator);
+  
   //free the memory referenced by a move accumulator vector
   static void free_move_acc(vector <_Move*> move_accumulator);
   

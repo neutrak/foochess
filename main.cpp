@@ -21,14 +21,13 @@ int main(int argc, char *argv[])
   //by default, white player is a human
 //  white_player->set_algo(USER);
   
-  //TODO: display options, allow user to set them
-  //TODO: WRITE AI::configure()!!!
-//  white_player->configure();
-//  black_player->configure();
+  //display options, allow user to set them
+  white_player->configure(WHITE);
+  black_player->configure(BLACK);
   
-  bool checkmate=false;
+  bool game_over=false;
   int winner=WHITE;
-  while(!checkmate)
+  while(!game_over)
   {
     board->output_board();
     
@@ -44,24 +43,22 @@ int main(int argc, char *argv[])
     int black_legal_moves=board->get_children().size();
     board->clear_children();
     
-    if(black_legal_moves==0)
+    //checkmate is when someone is in check and has no legal moves
+    if((black_legal_moves==0) && (board->get_check(BLACK)))
     {
-      //checkmate is when someone is in check and has no legal moves
-      if(board->get_check(BLACK))
-      {
-        printf("CHECKMATE\n");
-        checkmate=true;
-        winner=WHITE;
-      }
-      else
-      {
-        printf("STALEMATE\n");
-        checkmate=true;
-        winner=-1;
-      }
+      printf("CHECKMATE\n");
+      game_over=true;
+      winner=WHITE;
+    }
+    //stalemate is when there are no legal moves or there has been repetition, insufficient material, etc.
+    else if(black_legal_moves==0 || TreeSearch::stalemate(board,white_player->get_moves()))
+    {
+      printf("STALEMATE\n");
+      game_over=true;
+      winner=-1;
     }
     
-    if(!checkmate)
+    if(!game_over)
     {
       board->output_board();
       
@@ -77,21 +74,19 @@ int main(int argc, char *argv[])
       int white_legal_moves=board->get_children().size();
       board->clear_children();
       
-      if(white_legal_moves==0)
+      //checkmate is when someone is in check and has no legal moves
+      if((white_legal_moves==0) && (board->get_check(WHITE)))
       {
-        //checkmate is when someone is in check and has no legal moves
-        if(board->get_check(WHITE))
-        {
-          printf("CHECKMATE\n");
-          checkmate=true;
-          winner=BLACK;
-        }
-        else
-        {
-          printf("STALEMATE\n");
-          checkmate=true;
-          winner=-1;
-        }
+        printf("CHECKMATE\n");
+        game_over=true;
+        winner=BLACK;
+      }
+      //stalemate is when there are no legal moves or there has been repetition, insufficient material, etc.
+      else if(white_legal_moves==0 || TreeSearch::stalemate(board,black_player->get_moves()))
+      {
+        printf("STALEMATE\n");
+        game_over=true;
+        winner=-1;
       }
     }
   }
