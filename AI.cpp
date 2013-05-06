@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "AI.h"
-#include "util.h"
 #include "Board.h"
 #include "SuperPiece.h"
 #include "TreeSearch.h"
