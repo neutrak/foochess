@@ -20,8 +20,6 @@ private:
   Board *master;
   //the algorithm to use
   algorithm algo;
-  //the heuristic to use (for the algorithms which are heuristic-based)
-  heuristic heur;
   //the history table this AI is using (NULL for none)
   HistTable *hist;
   

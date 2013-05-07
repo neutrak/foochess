@@ -307,8 +307,6 @@ void AI::init()
   
   //this is just initialization
   algo=TREE_SEARCH;
-  //TODO: remove this heur, use settings from AI class instead of heur enum value in id_minimax call
-  heur=INFORMED_DANGER;
 }
 
 _Move *AI::user_move(Board *board, int player_id)
@@ -344,7 +342,7 @@ _Move *AI::user_move(Board *board, int player_id)
     //NOTE: width and height are always 8, so this range is defined with constants
     if(from_file>=1 && from_file<=8 && from_rank>=1 && from_rank<=8 && to_file>=1 && to_file<=8 && to_rank>=1 && to_rank<=8)
     {
-      if(board->get_element(from_file,from_rank)!=NULL && board->get_element(from_file,from_rank)->owner==WHITE)
+      if(board->get_element(from_file,from_rank)!=NULL && board->get_element(from_file,from_rank)->owner==player_id)
       {
         //verify this move is one of the ones that can be generated for that board for the player, if not make them try again
         bool found_move=false;
