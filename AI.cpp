@@ -10,8 +10,8 @@ AI::AI()
   
   //the history table this AI is using (NULL for none)
   //(history table is NULL for no history table, so doesn't need to be a seperate setting)
-//  hist=new HistTable();
-  hist=NULL;
+  hist=new HistTable();
+//  hist=NULL;
   
   //treesearch settings
   max_depth=1;
@@ -37,6 +37,112 @@ AI::AI()
 
 AI::~AI()
 {
+}
+
+//output current tree search settings
+void AI::output_ts_settings()
+{
+  printf("history=%s\n",(hist==NULL)? "false" : "true");
+  printf("\n");
+  printf("max_depth=%i\n",max_depth);
+  printf("qs_depth=%i\n",qs_depth);
+  printf("ab_prune=%s\n",ab_prune? "true" : "false");
+  printf("\n");
+  printf("heur_pawn_additions=%s\n",heur_pawn_additions? "true" : "false");
+  printf("heur_position_additions=%s\n",heur_position_additions? "true" : "false");
+  printf("\n");
+  printf("enemy_weight=%lf\n",enemy_weight);
+  printf("owned_weight=%lf\n",owned_weight);
+  printf("\n");
+  printf("time_limit=%s\n",time_limit? "true" : "false");
+  printf("timeout=%lf\n",timeout);
+  printf("\n");
+  printf("beam_width=%i\n",beam_width);
+  printf("\n\n");
+}
+
+void AI::set_ts_option(char *variable, char *value, int buffer_size)
+{
+  //first lower case both the variable and value
+  for(int n=0; n<buffer_size && variable[n]!='\0'; n++)
+  {
+    variable[n]=tolower(variable[n]);
+  }
+  for(int n=0; n<buffer_size && value[n]!='\0'; n++)
+  {
+    value[n]=tolower(value[n]);
+  }
+  
+  if(!strncmp(variable,"history",buffer_size))
+  {
+    //remove any existing history
+    if(hist!=NULL)
+    {
+      delete hist;
+    }
+    
+    //if we're being asked to make some history, do that
+    if(string_to_bool(value,buffer_size))
+    {
+      hist=new HistTable();
+    }
+    //if not, set a placeholder so we know we're not using history
+    else
+    {
+      hist=NULL;
+    }
+  }
+  else if(!strncmp(variable,"max_depth",buffer_size))
+  {
+    max_depth=atoi(value);
+  }
+  else if(!strncmp(variable,"qs_depth",buffer_size))
+  {
+    qs_depth=atoi(value);
+  }
+  else if(!strncmp(variable,"ab_prune",buffer_size))
+  {
+    ab_prune=string_to_bool(value,buffer_size);
+  }
+  else if(!strncmp(variable,"heur_pawn_additions",buffer_size))
+  {
+    heur_pawn_additions=string_to_bool(value,buffer_size);
+  }
+  else if(!strncmp(variable,"heur_position_additions",buffer_size))
+  {
+    heur_position_additions=string_to_bool(value,buffer_size);
+  }
+  else if(!strncmp(variable,"enemy_weight",buffer_size))
+  {
+    enemy_weight=atof(value);
+  }
+  else if(!strncmp(variable,"owned_weight",buffer_size))
+  {
+    owned_weight=atof(value);
+  }
+  else if(!strncmp(variable,"time_limit",buffer_size))
+  {
+    time_limit=string_to_bool(value,buffer_size);
+  }
+  else if(!strncmp(variable,"timeout",buffer_size))
+  {
+    timeout=atof(value);
+  }
+  else if(!strncmp(variable,"beam_width",buffer_size))
+  {
+    beam_width=atoi(value);
+  }
+}
+
+bool AI::string_to_bool(char *string, int buffer_size)
+{
+  if(tolower(string[0])=='t')
+  {
+    return true;
+  }
+  
+  //if we didn't get a true value above, assume the value to be false
+  return false;
 }
 
 //allow the user to change all the settings of this AI object
@@ -90,8 +196,65 @@ void AI::configure(int player_id)
     bool options_done=false;
     while(!options_done)
     {
-      //TODO: let the user set all tree search options here
-      options_done=true;
+      output_ts_settings();
+      printf("To change a value, state variable=new_value; for example timeout=40.0 to make the timeout 40 seconds\n");
+      printf("Setting (quit to quit): ");
+      
+      //get some input!
+      char input_buffer[BUFFER_SIZE];
+      bzero(input_buffer,BUFFER_SIZE);
+      scanf("%s",input_buffer);
+      input_buffer[BUFFER_SIZE-1]='\0';
+      
+      if(!strncmp(input_buffer,"quit",BUFFER_SIZE))
+      {
+        options_done=true;
+      }
+      else
+      {
+        //store what is before and after the equal sign, respectively
+        char variable[BUFFER_SIZE];
+        bzero(variable,BUFFER_SIZE);
+        char value[BUFFER_SIZE];
+        bzero(value,BUFFER_SIZE);
+        
+        //look for an equal sign in the user input
+        //if none is found the index should remain at -1 as an error code
+        int equal_index=-1;
+        for(int n=0; n<BUFFER_SIZE; n++)
+        {
+          if(input_buffer[n]!='\0')
+          {
+            //if we still haven't found an equal sign add this char to variable
+            if(equal_index<0)
+            {
+              variable[n]=input_buffer[n];
+              if(input_buffer[n]=='=')
+              {
+                equal_index=n;
+                variable[n]='\0';
+              }
+            }
+            //now that we've found a variable, read into the value string
+            else
+            {
+              value[n-equal_index-1]=input_buffer[n];
+            }
+          }
+          else
+          {
+            n=BUFFER_SIZE;
+          }
+        }
+        
+        //if an equal sign was found somewhere in the string, scan it in!
+        if(equal_index>=0)
+        {
+          printf("AI::configure() debug 0, got variable \"%s\" value \"%s\"\n",variable,value);
+          //set the internal variable!
+          set_ts_option(variable,value,BUFFER_SIZE);
+        }
+      }
     }
   }
   
@@ -142,16 +305,10 @@ void AI::init()
   //clear out moves vector
   moves.clear();
   
-  //no history table until otherwise specified
-  hist=NULL;
-  
-  //TODO: generalize, remove this code
-  //set algorithm and heuristic (temporary code)
+  //this is just initialization
   algo=TREE_SEARCH;
+  //TODO: remove this heur, use settings from AI class instead of heur enum value in id_minimax call
   heur=INFORMED_DANGER;
-  
-//  algo=RANDOM;
-//  heur=INFORMED_DANGER;
 }
 
 _Move *AI::user_move(Board *board, int player_id)
@@ -302,14 +459,13 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
     printf("AI::ai_move() debug 0.5, making tree search (id minimax) move\n");
     
-    //declaration: static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, heuristic heur, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining);
-    //default AI player
-//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,heur,true,true,hist,12,time_remaining,enemy_time_remaining);
+    //default AI player (what was entered in the AI tournament)
+//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,true,true,1,0.75,true,true,hist,12,time_remaining,enemy_time_remaining,false);
     
     //configured AI player
-    //TODO: replace heur with weight settings and heuristic options
-    //TODO: replace time_remaining with timeout values, ignored enemy_time_remaining
-    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,heur,ab_prune,time_limit,hist,beam_width,900,900);
+    //NOTE: weight settings and heuristic options are used in place of a heur from an enum
+    //NOTE: when fixed_time (last boolean argument) is true, time_remaining is time allocated to this move; in this case time heuristic is not used
+    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight,ab_prune,time_limit,hist,beam_width,timeout,900,true);
   }
   return move;
 }

@@ -55,15 +55,21 @@ public:
   AI();
   ~AI();
   
+  //display current values of all treesearch settings
+  void output_ts_settings();
+  
+  //set an option based on user input
+  void set_ts_option(char *variable, char *value, int buffer_size);
+  
+  //convert a string to a boolean
+  bool string_to_bool(char *string, int buffer_size);
+  
   //allow the user to change all the settings of this AI object
   void configure(int player_id);
   
   //time-limited input (timeout is in seconds)
   //returns true when input is recieved, false otherwise
   bool tl_input(char *buffer, int buffer_size, int timeout);
-  
-  //set the internal algorithm to be used for movements
-  void set_algo(algorithm a) { algo=a; }
   
   void init();
   

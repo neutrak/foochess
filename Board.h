@@ -107,7 +107,7 @@ public:
   //order children by history table values, given a history table to use
   void history_order_children(HistTable *hist);
   //order children by heursitic values
-  void heuristic_order_children(int player_id, bool max, heuristic heur);
+  void heuristic_order_children(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
   
   //an in-place quicksort implementation, sorting by sorting_value values of children (which can be set as anything)
   void quicksort_children(int lower_bound, int upper_bound);
@@ -170,15 +170,8 @@ public:
   //when informed is true position is taken into account, etc.
   double points(int player_id, bool informed, bool attack_ability);
   
-  //the heuristics we'll be using for minimax
-  double informed_danger_heuristic(int player_id, bool max);
-  double informed_attack_heuristic(int player_id, bool max);
-  double informed_defend_heuristic(int player_id, bool max);
-  double naive_attack_heuristic(int player_id, bool max);
-  double naive_defend_heuristic(int player_id, bool max);
-  
-  //a general heuristic function to call, with a parameter for which heuristic to use
-  double heuristic_value(int player_id, bool max, heuristic heur);
+  //a general heuristic function to call, with parameters for heuristic options
+  double heuristic_value(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
   
   //this is a count of how many tiles on the board are attackable by the given player
   //it's something I'm playing with as part of heuristic calculation

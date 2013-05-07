@@ -334,12 +334,12 @@ void Board::history_order_children(HistTable *hist)
 }
 
 //order children by heursitic values
-void Board::heuristic_order_children(int player_id, bool max, heuristic heur)
+void Board::heuristic_order_children(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
 {
   //set sorting values based on heuristic, then do a quicksort
   for(size_t i=0; i<children.size(); i++)
   {
-    double child_value=children[i]->heuristic_value(player_id,max,heur);
+    double child_value=children[i]->heuristic_value(player_id,max,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight);
     
     //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
     if(!max)
@@ -1371,80 +1371,15 @@ double Board::points(int player_id, bool informed, bool attack_ability)
 }
 
 
-double Board::informed_danger_heuristic(int player_id, bool max)
-{
-  //player id of max player
-  int pid=max? player_id : !player_id;
-  
-  return (points(pid,true,true)*0.75)-(points(!pid,true,true)); //keep ourselves in at least as good a point position as the enemy and a better piece position
-}
-
-double Board::informed_attack_heuristic(int player_id, bool max)
+//a general heuristic function to call, with parameters for heuristic options
+double Board::heuristic_value(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
 {
   //a local player id
   //the heuristic is always calculated with respect to the max player
   //if the max player is not at move, calculate with respect to it anyway
   int pid=max? player_id : !player_id;
   
-//  return points(pid,true,true); //keep ourselves alive above all else
-//  return ((points(pid,true,true))-(points(!pid,true,true))); //make us have a higher score than the enemy above all else
-//  return -(points(!pid,true,true)); //kill the enemy above all else
-  return (points(pid,true,false)*0.7)-(points(!pid,true,false)); //kill the enemy but don't sacrifice everything to accomplish that
-}
-
-double Board::informed_defend_heuristic(int player_id, bool max)
-{
-  //player id of max player
-  int pid=max? player_id : !player_id;
-  
-  return (points(pid,true,false))-(points(!pid,true,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
-}
-
-double Board::naive_attack_heuristic(int player_id, bool max)
-{
-  //player id of max player
-  int pid=max? player_id : !player_id;
-  
-  return (points(pid,false,false)*0.7)-(points(!pid,false,false)); //kill the enemy but don't sacrifice everything to accomplis that
-}
-
-double Board::naive_defend_heuristic(int player_id, bool max)
-{
-  //player id of max player
-  int pid=max? player_id : !player_id;
-  
-  return (points(pid,false,false))-(points(!pid,false,false)*0.7); //defend ourselves first but kill the enemy where it's convienent
-}
-
-//a general heuristic function to call, with a parameter for which heuristic to use
-double Board::heuristic_value(int player_id, bool max, heuristic heur)
-{
-  double heur_value=0.0;
-  
-  switch(heur)
-  {
-    case INFORMED_DANGER:
-      heur_value=informed_danger_heuristic(player_id,max);
-      break;
-    case INFORMED_ATTACK:
-      heur_value=informed_attack_heuristic(player_id,max);
-      break;
-    case INFORMED_DEFEND:
-      heur_value=informed_defend_heuristic(player_id,max);
-      break;
-    case NAIVE_ATTACK:
-      heur_value=naive_attack_heuristic(player_id,max);
-      break;
-    case NAIVE_DEFEND:
-      heur_value=naive_defend_heuristic(player_id,max);
-      break;
-    //in case we didn't get anything above, use a default heuristic
-    default:
-      heur_value=informed_danger_heuristic(player_id,max);
-      break;
-  }
-  
-  return heur_value;
+  return (points(pid,heur_pawn_additions,heur_position_additions)*owned_weight)-(points(!pid,heur_pawn_additions,heur_position_additions)*enemy_weight);
 }
 
 //this is a count of how many tiles on the board are attackable by the given player

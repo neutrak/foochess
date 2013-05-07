@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
       }
     }
   }
+  board->output_board();
   printf("Game over, winner was %s\n",(winner==WHITE)? "White" : (winner==BLACK)? "Black" : "<stalemate>");
   
   delete board;
