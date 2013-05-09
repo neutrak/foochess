@@ -20,8 +20,6 @@ private:
   Board *master;
   //the algorithm to use
   algorithm algo;
-  //the history table this AI is using (NULL for none)
-  HistTable *hist;
   
   //a move history
   vector <_Move*> moves;
@@ -30,6 +28,11 @@ private:
   int max_depth;
   int qs_depth;
   bool ab_prune;
+  
+  //the history table this AI is using (NULL for none)
+  HistTable *hist;
+  //number of moves before history gets cleared out (0 for never clear)
+  int history_reset;
   
   //heurstic stuff
   bool heur_pawn_additions;

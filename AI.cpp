@@ -8,15 +8,15 @@ AI::AI()
 {
   //make sane setting defaults
   
-  //the history table this AI is using (NULL for none)
-  //(history table is NULL for no history table, so doesn't need to be a seperate setting)
-  hist=new HistTable();
-//  hist=NULL;
-  
   //treesearch settings
   max_depth=1;
   qs_depth=3;
   ab_prune=true;
+  
+  //the history table this AI is using (NULL for none)
+  //(history table is NULL for no history table, so doesn't need to be a seperate setting)
+  hist=new HistTable();
+  history_reset=15;
   
   //heurstic stuff
   heur_pawn_additions=true;
@@ -42,11 +42,12 @@ AI::~AI()
 //output current tree search settings
 void AI::output_ts_settings()
 {
-  printf("history=%s\n",(hist==NULL)? "false" : "true");
-  printf("\n");
   printf("max_depth=%i\n",max_depth);
   printf("qs_depth=%i\n",qs_depth);
   printf("ab_prune=%s\n",ab_prune? "true" : "false");
+  printf("\n");
+  printf("history=%s\n",(hist==NULL)? "false" : "true");
+  printf("history_reset=%i\n",history_reset);
   printf("\n");
   printf("heur_pawn_additions=%s\n",heur_pawn_additions? "true" : "false");
   printf("heur_position_additions=%s\n",heur_position_additions? "true" : "false");
@@ -73,7 +74,19 @@ void AI::set_ts_option(char *variable, char *value, int buffer_size)
     value[n]=tolower(value[n]);
   }
   
-  if(!strncmp(variable,"history",buffer_size))
+  if(!strncmp(variable,"max_depth",buffer_size))
+  {
+    max_depth=atoi(value);
+  }
+  else if(!strncmp(variable,"qs_depth",buffer_size))
+  {
+    qs_depth=atoi(value);
+  }
+  else if(!strncmp(variable,"ab_prune",buffer_size))
+  {
+    ab_prune=string_to_bool(value,buffer_size);
+  }
+  else if(!strncmp(variable,"history",buffer_size))
   {
     //remove any existing history
     if(hist!=NULL)
@@ -92,17 +105,9 @@ void AI::set_ts_option(char *variable, char *value, int buffer_size)
       hist=NULL;
     }
   }
-  else if(!strncmp(variable,"max_depth",buffer_size))
+  else if(!strncmp(variable,"history_reset",buffer_size))
   {
-    max_depth=atoi(value);
-  }
-  else if(!strncmp(variable,"qs_depth",buffer_size))
-  {
-    qs_depth=atoi(value);
-  }
-  else if(!strncmp(variable,"ab_prune",buffer_size))
-  {
-    ab_prune=string_to_bool(value,buffer_size);
+    history_reset=atoi(value);
   }
   else if(!strncmp(variable,"heur_pawn_additions",buffer_size))
   {
@@ -477,7 +482,7 @@ bool AI::run(Board *board, int player_id)
   
   //this is a "sliding window" for history table algorithms
   //it doesn't really slide so much as step, but it's still better behavior than never adjusting for early to late game
-  if((moves.size()%15==0) && hist!=NULL)
+  if((moves.size()%history_reset==0) && hist!=NULL)
   {
     delete hist;
     hist=new HistTable();
