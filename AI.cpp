@@ -343,7 +343,7 @@ _Move *AI::user_move(Board *board, int player_id)
     int to_file=tolower(input_buffer[2])-'a'+1;
     int to_rank=input_buffer[3]-'0';
     
-    printf("main debug 0, got a move from %i,%i to %i,%i\n",from_file,from_rank,to_file,to_rank);
+    printf("main debug 0, got a move from %c,%i to %c,%i\n",(char)(from_file+'a'-1),from_rank,(char)(to_file+'a'-1),to_rank);
     //NOTE: width and height are always 8, so this range is defined with constants
     if(from_file>=1 && from_file<=8 && from_rank>=1 && from_rank<=8 && to_file>=1 && to_file<=8 && to_rank>=1 && to_rank<=8)
     {
