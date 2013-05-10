@@ -482,7 +482,8 @@ bool AI::run(Board *board, int player_id)
   
   //this is a "sliding window" for history table algorithms
   //it doesn't really slide so much as step, but it's still better behavior than never adjusting for early to late game
-  if((moves.size()%history_reset==0) && hist!=NULL)
+  //NOTE: if history_reset<=0, no reset ever occurs
+  if((history_reset>0) && (moves.size()%history_reset==0) && hist!=NULL)
   {
     delete hist;
     hist=new HistTable();
