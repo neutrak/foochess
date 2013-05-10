@@ -56,6 +56,11 @@ public:
   AI();
   ~AI();
   
+  void init();
+  
+  //set the algorithm from outside the class
+  void set_algo(algorithm a){ algo=a; }
+  
   //display current values of all treesearch settings
   void output_ts_settings();
   
@@ -71,8 +76,6 @@ public:
   //time-limited input (timeout is in seconds)
   //returns true when input is recieved, false otherwise
   bool tl_input(char *buffer, int buffer_size, int timeout);
-  
-  void init();
   
   //store this move in the movement history
   void remember_move(_Move *m);

@@ -5,7 +5,7 @@
 #include "AI.h"
 #include "TreeSearch.h"
 
-//TODO: make this able to play a very configured AI against another very configured AI, either black or white for both user and AI
+//this is able to play a very configured AI against another very configured AI, either black or white for both user and AI
 int main(int argc, char *argv[])
 {
   //make a board to play on
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
   black_player->init();
   
   //by default, white player is a human
-//  white_player->set_algo(USER);
+  white_player->set_algo(USER);
   
   //display options, allow user to set them
   white_player->configure(WHITE);
