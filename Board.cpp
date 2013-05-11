@@ -59,14 +59,10 @@ Board::Board()
       
       //queen takes the color, king gets the other value
       case 4:
-        place_piece(0,BLACK,f,8,false,'K',false,0);
-        place_piece(0,WHITE,f,1,false,'Q',false,0);
-        normal_placement=false;
+        type_to_place='Q';
         break;
       case 5:
-        place_piece(0,WHITE,f,1,false,'K',false,0);
-        place_piece(0,BLACK,f,8,false,'Q',false,0);
-        normal_placement=false;
+        type_to_place='K';
         break;
       default:
         break;
