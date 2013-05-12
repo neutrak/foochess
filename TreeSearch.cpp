@@ -612,7 +612,9 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
   
   if(max_move!=NULL)
   {
-//    printf("dl_minimax debug 2, best move is from file, rank (%c,%i) to (%c,%i)\n(dl_minimax debug 2, heuristic value %lf)\n", (char)(max_move->fromFile+'a'-1), max_move->fromRank, (char)(max_move->toFile+'a'-1), max_move->toRank, current_max);
+#ifdef DEBUG
+    printf("dl_minimax debug 2, best move is from file, rank (%c,%i) to (%c,%i)\n(dl_minimax debug 2, heuristic value %lf)\n", (char)(max_move->fromFile+'a'-1), max_move->fromRank, (char)(max_move->toFile+'a'-1), max_move->toRank, current_max);
+#endif
   }
   
   free_move_acc(move_accumulator);
