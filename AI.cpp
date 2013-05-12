@@ -32,7 +32,7 @@ AI::AI()
   timeout=30.0;
   
   //how many nodes to keep after forward-pruning (0 for no forward pruning)
-  beam_width=12;
+  beam_width=0;
 }
 
 AI::~AI()

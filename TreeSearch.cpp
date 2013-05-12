@@ -331,8 +331,6 @@ _Move *TreeSearch::random_move(Board *board, int player_id)
 //a helper for beam search
 void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
 {
-//  printf("TreeSearch::beam_prune debug 0, initial children size is %lu\n",node->get_children().size());
-  
   //if we're doing a beam search and there are children to consider
   if(beam_width>0 && !(node->get_children().empty()))
   {
@@ -350,8 +348,6 @@ void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id,
       node->resize_children(beam_width);
     }
   }
-  
-//  printf("TreeSearch::beam_prune debug 1, new children size is %lu\n",node->get_children().size());
 }
 
 //helper functions for depth-limited minimax
