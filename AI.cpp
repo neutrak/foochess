@@ -512,6 +512,11 @@ bool AI::run(Board *board, int player_id)
     //apply the move we just made to the master board copy also; but use different memory for management ease
     board->apply_move(move, true);
     moves.push_back(board->copy_move(move));
+    
+    if(algo!=USER)
+    {
+      printf("Move made was %c%i%c%i\n",(char)(move->fromFile+'a'-1),move->fromRank,(char)(move->toFile+'a'-1),move->toRank);
+    }
   }
   else
   {
