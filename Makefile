@@ -16,6 +16,10 @@ install: foochess
 	cp foochess.man.gz /usr/share/man/man1/foochess.1.gz
 	gzip -d foochess.man.gz
 
+uninstall:
+	rm /usr/bin/foochess
+	rm /usr/share/man/man1/foochess.1.gz
+
 foochess: $(objects)
 	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -Wall -o foochess
 
