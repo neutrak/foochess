@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     {
       printf("For help see the manual page\n");
     }
-    else if(!strcmp(argv[1],""))
+    else if(!strcmp(argv[1],"--version"))
     {
       printf("foochess version %s\n",VERSION);
     }
