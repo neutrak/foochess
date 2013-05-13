@@ -1,0 +1,70 @@
+.TH FOOCHESS 1 "12 May 2013"
+.SH NAME
+foochess \- a simple ascii chess program with configurable AI
+.SH SYNOPSIS
+\fBfoochess\fP [ --help | --version ]
+.SH DESCRIPTION
+\fBfoochess\fP runs program; default configuration is hard-coded but changable at runtime
+.SS Options
+.TP
+\fB--help\fP
+tells you to read this man page
+.TP
+\fB--version\fP
+outputs the version of this software, in the form <major int>.<minor int>; major counts redesigns, minor counts updates; for both, even numbers are stable, odd numbers are unstable/testing
+.SS Algorithms
+.TP
+\fBUSER\fP
+lets the user select a move for this player (by default white player uses this)
+.TP
+\fBRANDOM\fP
+chooses a random legal move and makes it, very very bad
+.TP
+\fBTREE_SEARCH\fP
+generates states and searches them in a user-specified manner, picks the best one it finds based on its heuristic (by default black player uses this)
+.SS Configuration
+.TP
+\fBmax_depth\fP
+the maximum depth to go to (moves to look ahead); ignored when time_limit is true
+.TP
+\fBqs_depth\fP
+quiescent depth; number of moves to extend search while all moves are quiescent; quiescent is defined as when either player is in check or there was a capture in the previous move
+.TP
+\fBab_prune\fP
+whether or not to use alpha-beta pruning; backwards pruning does not ignore moves, it only does safe pruning to improve efficiency
+.TP
+\fBhistory\fP
+whether or not to use a history table, saving the best moves from previous searches to search more quickly; the history table is stored as a C++ multimap object
+.TP
+\fBhistory_reset\fP
+how many moves to keep a history table before making a new one (0 for never reset); this is ignored when there is no history table in use
+.TP
+\fBheur_pawn_additions\fP
+when true, pawns are given an additional 1 point value for every position past the center line, and 9 points are added to the point value when the enemy is in check
+.TP
+\fBheur_position_additions\fP
+when true, point values are added for pieces that can be attacked, both its own pieces and enemy pieces, the value added is proportional to but not equal to the point value of the piece that's attackable
+.TP
+\fBenemy_weight\fP
+how much the enemy's points are multiplied by when this player is at move (if this is higher than owned_weight the algorithm will be offensive, caring more about decreasing enemy position than increasing its own)
+.TP
+\fBowned_weight\fP
+how much the tree_search player's points are multiplied by when it is at move (if this is higher than enemy_weight the algorithm will be defensive, caring more about keeping its own position than hurting the enemy's)
+.TP
+\fBtime_limit\fP
+whether to time limit the move or not; false means depth limit and max_depth will be the limit; true means look as many moves as possible ahead until out of time, then stop and return
+.TP
+\fBtimeout\fP
+how many seconds to allocate to the algorithm to make a move; the longer given the further ahead it could potentially look; this is ignored when time_limit is false
+.TP
+\fBbeam_width\fP
+how many moves of the possible moves to consider at maximum; 0 for no forward pruning; low beam_width values will cause the algorithm to look further ahead but miss potentially good moves (e.g. 10), higher values (e.g. 25) are pretty useless because to determine which nodes to follow a sort has to take place, and if the total node number is not sufficiently reduced this will take all the time and you'd be better off not to forward prune
+.SH FILES
+.SH "SEE ALSO"
+.SH BUGS
+No known bugs, there probably are some, but none are known
+.SH NOTES
+The default setup is user plays white, algorithm plays black.  Default values for algorithm are all additions heuristic, time limited to 30 seconds, history table used, quiescent depth 3, no forward pruning.  This is good enough on a modern computer to beat most amateur players.  
+.SH WWW
+http://somegenericsite.dyndns.org/index.php?p=code
+

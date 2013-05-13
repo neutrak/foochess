@@ -10,6 +10,12 @@ all: foochess
 clean:
 	rm -f $(objects) foochess
 
+install: foochess
+	cp foochess /usr/bin
+	gzip foochess.man
+	cp foochess.man.gz /usr/share/man/man1/foochess.1.gz
+	gzip -d foochess.man.gz
+
 foochess: $(objects)
 	$(CXX) $(LDFLAGS) $(LOADLIBES) $(LDLIBS) $^ -Wall -o foochess
 

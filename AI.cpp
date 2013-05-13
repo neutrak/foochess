@@ -202,8 +202,9 @@ void AI::configure(int player_id)
     while(!options_done)
     {
       output_ts_settings();
-      printf("To change a value, state variable=new_value; for example timeout=40.0 to make the timeout 40 seconds\n");
-      printf("Setting (quit to quit): ");
+      printf("To change a value, state variable=new_value\n");
+      printf("for example timeout=40.0 to make the timeout 40 seconds\n");
+      printf("Setting (quit or q to quit): ");
       
       //get some input!
       char input_buffer[BUFFER_SIZE];
@@ -211,7 +212,7 @@ void AI::configure(int player_id)
       scanf("%s",input_buffer);
       input_buffer[BUFFER_SIZE-1]='\0';
       
-      if(!strncmp(input_buffer,"quit",BUFFER_SIZE))
+      if((!strncmp(input_buffer,"quit",BUFFER_SIZE)) || (!strncmp(input_buffer,"q",BUFFER_SIZE)))
       {
         options_done=true;
       }
@@ -255,7 +256,7 @@ void AI::configure(int player_id)
         //if an equal sign was found somewhere in the string, scan it in!
         if(equal_index>=0)
         {
-          printf("AI::configure() debug 0, got variable \"%s\" value \"%s\"\n",variable,value);
+//          printf("AI::configure() debug 0, got variable \"%s\" value \"%s\"\n",variable,value);
           //set the internal variable!
           set_ts_option(variable,value,BUFFER_SIZE);
         }
@@ -323,14 +324,15 @@ _Move *AI::user_move(Board *board, int player_id)
   _Move *player_move=NULL;
   while(player_move==NULL)
   {
-    printf("Move Selection (expected format <from file><from rank><to file><to rank>; for example a2a3 would move from location a,2 to location a,3) (quit to quit)\n");
+    printf("Move Selection (expected format <from file><from rank><to file><to rank>)\n");
+    printf("for example a2a3 would move from location a,2 to location a,3 (quit or q to quit)\n");
     printf("Enter move: ");
     scanf("%s",input_buffer);
     //always null-terminate
     input_buffer[BUFFER_SIZE-1]='\0';
     
-    printf("AI::user_move debug 0, input_buffer=\"%s\"\n",input_buffer);
-    if(!strncmp(input_buffer,"quit",BUFFER_SIZE))
+//    printf("AI::user_move debug 0, input_buffer=\"%s\"\n",input_buffer);
+    if((!strncmp(input_buffer,"quit",BUFFER_SIZE)) || (!strncmp(input_buffer,"q",BUFFER_SIZE)))
     {
       //NOTE: any memory we are using should be cleaned up by the kernel here...
       exit(0);
@@ -343,7 +345,7 @@ _Move *AI::user_move(Board *board, int player_id)
     int to_file=tolower(input_buffer[2])-'a'+1;
     int to_rank=input_buffer[3]-'0';
     
-    printf("main debug 0, got a move from %c,%i to %c,%i\n",(char)(from_file+'a'-1),from_rank,(char)(to_file+'a'-1),to_rank);
+//    printf("main debug 0, got a move from %c,%i to %c,%i\n",(char)(from_file+'a'-1),from_rank,(char)(to_file+'a'-1),to_rank);
     //NOTE: width and height are always 8, so this range is defined with constants
     if(from_file>=1 && from_file<=8 && from_rank>=1 && from_rank<=8 && to_file>=1 && to_file<=8 && to_rank>=1 && to_rank<=8)
     {
@@ -422,12 +424,13 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
   //if the user is playing, get the start and end positions from stdin
   if(algo==USER)
   {
-    printf("AI::ai_move() debug 0.5, making user-specified move\n");
+//    printf("AI::ai_move() debug 0.5, making user-specified move\n");
     move=user_move(board,player_id);
   }
   else if(algo==RANDOM)
   {
-    printf("AI::ai_move() debug 0.5, making random move\n");
+//    printf("AI::ai_move() debug 0.5, making random move\n");
+    printf("Random move...\n");
     move=TreeSearch::random_move(board,player_id);
   }
   else if(algo==TREE_SEARCH)
@@ -460,7 +463,16 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     TreeSearch ts;
     
     //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
-    printf("AI::ai_move() debug 0.5, making tree search (id minimax) move\n");
+//    printf("AI::ai_move() debug 0.5, making tree search (id minimax) move\n");
+    printf("AI is thinking (will stop when time or depth limit is reached)...\n");
+    if(time_limit)
+    {
+      printf("Using a time limit of %lf seconds...\n",timeout);
+    }
+    else
+    {
+      printf("Using a depth limit of %i moves ahead...\n",max_depth);
+    }
     
     //default AI player (what was entered in the AI tournament)
 //    move=ts.id_minimax(board,1,3,player_id,move_accumulator,true,true,1,0.75,true,true,hist,12,time_remaining,enemy_time_remaining,false);

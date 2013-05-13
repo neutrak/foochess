@@ -4,10 +4,26 @@
 #include "Board.h"
 #include "AI.h"
 #include "TreeSearch.h"
+#define VERSION "0.1"
 
 //this is able to play a very configured AI against another very configured AI, either black or white for both user and AI
 int main(int argc, char *argv[])
 {
+  //command line arguments, only for help text
+  if(argc>1)
+  {
+    if(!strcmp(argv[1],"--help"))
+    {
+      printf("For help see the manual page\n");
+    }
+    else if(!strcmp(argv[1],""))
+    {
+      printf("foochess version %s\n",VERSION);
+    }
+    //any cli arguments terminate the program before really running
+    exit(0);
+  }
+  
   //make a board to play on
   Board *board=new Board();
   
