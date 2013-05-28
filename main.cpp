@@ -76,7 +76,9 @@ int main(int argc, char *argv[])
     
     if(!game_over)
     {
-      board->output_board();
+      //output in reverse for the black player, since that's how they will see the board
+//      board->output_board();
+      board->output_reverse_board();
       
       if(board->get_last_move_made()!=NULL)
       {

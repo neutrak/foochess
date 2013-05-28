@@ -390,13 +390,56 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, int pi
   return store_index;
 }
 
-//Output the board
+//output the board
 //(no arguments since all relevant data is already stored in the Board class)
 void Board::output_board()
 {
   // Print out the current board state
   printf("   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=8; rank>0; rank--)
+  {
+    printf(" %lu |",rank);
+    for(size_t file=1; file<=8; file++)
+    {
+      _SuperPiece *p=get_element(file,rank);
+      //if there is something on the board at this position
+      if(p!=NULL)
+      {
+          // Checks if the piece is black
+          if(p->owner == 1)
+          {
+            printf("*");
+          }
+          else
+          {
+            printf(" ");
+          }
+          // prints the piece's type
+          printf("%c ",(char)(p->type));
+      }
+      else
+      {
+        printf("   ");
+      }
+      printf("|");
+    }
+    printf("\n   +---+---+---+---+---+---+---+---+\n");
+  }
+  
+  printf("   |");
+  for(size_t file=1; file<=8; file++)
+  {
+    printf(" %c |",(char)(file-1+'a'));
+  }
+  printf("\n");
+}
+
+//output the board in reverse so that a player playing as black can see it easily
+void Board::output_reverse_board()
+{
+  // Print out the current board state
+  printf("   +---+---+---+---+---+---+---+---+\n");
+  for(size_t rank=1; rank<=8; rank++)
   {
     printf(" %lu |",rank);
     for(size_t file=1; file<=8; file++)

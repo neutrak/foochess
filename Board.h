@@ -105,6 +105,7 @@ public:
   
   //display whatever the current state of the board is
   void output_board();
+  void output_reverse_board();
   
   //finds the king
   _SuperPiece *find_king(int player_id);

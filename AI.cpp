@@ -10,7 +10,7 @@ AI::AI()
   
   //treesearch settings
   max_depth=1;
-  qs_depth=3;
+  qs_depth=30;
   ab_prune=true;
   
   //the history table this AI is using (NULL for none)
@@ -24,7 +24,7 @@ AI::AI()
   
   //weight for opponent pieces and our pieces, respecitvely
   enemy_weight=1;
-  owned_weight=0.75;
+  owned_weight=0.9;
   
   //whether or not to time-limit
   time_limit=true;
