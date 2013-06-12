@@ -398,7 +398,7 @@ void Board::output_board()
   printf("   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=8; rank>0; rank--)
   {
-    printf(" %lu |",rank);
+    printf(" %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
       _SuperPiece *p=get_element(file,rank);
@@ -441,7 +441,7 @@ void Board::output_reverse_board()
   printf("   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=1; rank<=8; rank++)
   {
-    printf(" %lu |",rank);
+    printf(" %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
       _SuperPiece *p=get_element(file,rank);
