@@ -378,7 +378,7 @@ _Move *AI::user_move(Board *board, int player_id)
               //case-insensitive
               input_buffer[0]=tolower(input_buffer[0]);
               
-              if(input_buffer[0]=='q' || input_buffer[0]=='q' || input_buffer[0]=='n' || input_buffer[0]=='b')
+              if(input_buffer[0]=='q' || input_buffer[0]=='r' || input_buffer[0]=='n' || input_buffer[0]=='b')
               {
                 valid_promotion=true;
                 promote_type=toupper(input_buffer[0]);
