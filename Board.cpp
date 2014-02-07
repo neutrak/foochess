@@ -330,12 +330,20 @@ void Board::history_order_children(HistTable *hist)
 }
 
 //order children by heursitic values
-void Board::heuristic_order_children(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
+void Board::heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
 {
   //set sorting values based on heuristic, then do a quicksort
   for(size_t i=0; i<children.size(); i++)
   {
-    double child_value=children[i]->heuristic_value(player_id,max,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight);
+    double child_value;
+    if(!entropy_heuristic)
+    {
+      child_value=children[i]->heuristic_value(player_id,max,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight);
+    }
+    else
+    {
+      child_value=children[i]->entropy_heuristic_value(player_id,max);
+    }
     
     //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
     if(!max)
@@ -1419,6 +1427,27 @@ double Board::heuristic_value(int player_id, bool max, bool heur_pawn_additions,
   int pid=max? player_id : !player_id;
   
   return (points(pid,heur_pawn_additions,heur_position_additions)*owned_weight)-(points(!pid,heur_pawn_additions,heur_position_additions)*enemy_weight);
+}
+
+//a heuristic where the most possible states (branches) for you and the least possible states for the enemy is considered the best
+//note that because we don't prune this heuristic gets REALLY SLOW, since it's seeking towards the largest branching factor possible
+int Board::entropy_heuristic_value(int player_id, bool max)
+{
+  //also try to minimize the enemy's moves
+  //(we use the count from one prior state because it's the most recent pre-calculated one; better than nothing, anyway)
+  int valid_enemy_move_count=0;
+  if(p!=NULL)
+  {
+    valid_enemy_move_count=p->get_children().size();
+  }
+  
+  if(!max)
+  {
+    return (-children.size()+valid_enemy_move_count);
+  }
+  
+  
+  return (children.size()-valid_enemy_move_count);
 }
 
 //this is a count of how many tiles on the board are attackable by the given player

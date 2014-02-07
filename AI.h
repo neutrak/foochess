@@ -34,6 +34,9 @@ private:
   //number of moves before history gets cleared out (0 for never clear)
   int history_reset;
   
+  //whether or not to use the entropy (branching-factor) heuristic
+  bool entropy_heuristic;
+  
   //heurstic stuff
   bool heur_pawn_additions;
   bool heur_position_additions;

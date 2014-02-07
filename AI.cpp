@@ -18,6 +18,9 @@ AI::AI()
   hist=new HistTable();
   history_reset=15;
   
+  //whether or not to use the entropy (branching-factor) heuristic
+  entropy_heuristic=false;
+  
   //heurstic stuff
   heur_pawn_additions=true;
   heur_position_additions=true;
@@ -48,6 +51,8 @@ void AI::output_ts_settings()
   printf("\n");
   printf("history=%s\n",(hist==NULL)? "false" : "true");
   printf("history_reset=%i\n",history_reset);
+  printf("\n");
+  printf("entropy_heuristic=%s\n",entropy_heuristic? "true" : "false");
   printf("\n");
   printf("heur_pawn_additions=%s\n",heur_pawn_additions? "true" : "false");
   printf("heur_position_additions=%s\n",heur_position_additions? "true" : "false");
@@ -108,6 +113,10 @@ void AI::set_ts_option(char *variable, char *value, int buffer_size)
   else if(!strncmp(variable,"history_reset",buffer_size))
   {
     history_reset=atoi(value);
+  }
+  else if(!strncmp(variable,"entropy_heuristic",buffer_size))
+  {
+    entropy_heuristic=string_to_bool(value,buffer_size);
   }
   else if(!strncmp(variable,"heur_pawn_additions",buffer_size))
   {
@@ -475,12 +484,12 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     }
     
     //default AI player (what was entered in the AI tournament)
-//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,true,true,1,0.75,true,true,hist,12,time_remaining,enemy_time_remaining,false);
+//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,true,true,1,0.75,false,true,true,hist,12,time_remaining,enemy_time_remaining,false);
     
     //configured AI player
     //NOTE: weight settings and heuristic options are used in place of a heur from an enum
     //NOTE: when fixed_time (last boolean argument) is true, time_remaining is time allocated to this move; in this case time heuristic is not used
-    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight,ab_prune,time_limit,hist,beam_width,timeout,900,true);
+    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,entropy_heuristic,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight,ab_prune,time_limit,hist,beam_width,timeout,900,true);
   }
   return move;
 }

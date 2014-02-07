@@ -2,8 +2,8 @@ sources = $(wildcard *.cpp)
 headers = $(wildcard *.h)
 objects = $(sources:%.cpp=%.o)
 deps = $(sources:%.cpp=%.d)
-CFLAGS += -Wall
-CXXFLAGS += -Wall
+CFLAGS +=-g -Wall
+CXXFLAGS +=-g -Wall
 
 all: foochess
 

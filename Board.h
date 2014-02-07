@@ -96,7 +96,7 @@ public:
   //order children by history table values, given a history table to use
   void history_order_children(HistTable *hist);
   //order children by heursitic values
-  void heuristic_order_children(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
+  void heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
   
   //an in-place quicksort implementation, sorting by sorting_value values of children (which can be set as anything)
   void quicksort_children(int lower_bound, int upper_bound);
@@ -162,6 +162,9 @@ public:
   
   //a general heuristic function to call, with parameters for heuristic options
   double heuristic_value(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
+  
+  //a heuristic where the most possible states (branches) for you and the least possible states for the enemy is considered the best
+  int entropy_heuristic_value(int player_id, bool max);
   
   //this is a count of how many tiles on the board are attackable by the given player
   //it's something I'm playing with as part of heuristic calculation
