@@ -76,6 +76,11 @@ int main(int argc, char *argv[])
     
     if(!game_over)
     {
+      if(board->get_check(BLACK))
+      {
+        printf("CHECK\n");
+      }
+      
       //output in reverse for the black player, since that's how they will see the board
 //      board->output_board();
       board->output_reverse_board();
@@ -105,6 +110,11 @@ int main(int argc, char *argv[])
         printf("STALEMATE\n");
         game_over=true;
         winner=-1;
+      }
+      
+      if((!game_over) && (board->get_check(WHITE)))
+      {
+        printf("CHECK\n");
       }
     }
   }

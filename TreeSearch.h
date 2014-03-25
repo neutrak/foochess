@@ -60,15 +60,15 @@ public:
   //QS depth should be 0 when quiescent search is not being used
   //hist is NULL when history is not being used
   //beam_width is 0 when forward pruning is not being used, and >0 when it is (this is the max number of children to consider)
-  static double min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used);
+  static double min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used);
   
   //depth-limited minimax
   //hist is NULL when history is not being used
-  static _Move *dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used);
+  static _Move *dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used);
   
   //NOTE: the way a non-quiescent search is done is to set the quiescent depth limit as 0
   //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining, bool fixed_time);
+  static _Move *id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining, bool fixed_time);
 };
 
 #endif

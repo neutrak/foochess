@@ -20,6 +20,8 @@ AI::AI()
   
   //whether or not to use the entropy (branching-factor) heuristic
   entropy_heuristic=false;
+  //whether to use alternate entropy heuristic (requires entropy_heuristic to be TRUE)
+  distance_sum=false;
   
   //heurstic stuff
   heur_pawn_additions=true;
@@ -45,25 +47,26 @@ AI::~AI()
 //output current tree search settings
 void AI::output_ts_settings()
 {
-  printf("max_depth=%i\n",max_depth);
+  printf("max_depth=%i                       (disregarded if time_limit is true)\n",max_depth);
   printf("qs_depth=%i\n",qs_depth);
   printf("ab_prune=%s\n",ab_prune? "true" : "false");
   printf("\n");
   printf("history=%s\n",(hist==NULL)? "false" : "true");
-  printf("history_reset=%i\n",history_reset);
+  printf("history_reset=%i                   (disregarded if history is false)\n",history_reset);
   printf("\n");
   printf("entropy_heuristic=%s\n",entropy_heuristic? "true" : "false");
+  printf("distance_sum=%s                    (disregarded if entropy_heuristic is false)\n",distance_sum? "true" : "false");
   printf("\n");
-  printf("heur_pawn_additions=%s\n",heur_pawn_additions? "true" : "false");
-  printf("heur_position_additions=%s\n",heur_position_additions? "true" : "false");
+  printf("heur_pawn_additions=%s             (disregarded if entropy_heuristic is true)\n",heur_pawn_additions? "true" : "false");
+  printf("heur_position_additions=%s         (disregarded if entropy_heuristic is true))\n",heur_position_additions? "true" : "false");
   printf("\n");
-  printf("enemy_weight=%lf\n",enemy_weight);
-  printf("owned_weight=%lf\n",owned_weight);
+  printf("enemy_weight=%lf                   (disregarded if entropy_heuristic is true)\n",enemy_weight);
+  printf("owned_weight=%lf                   (disregarded if entropy_heuristic is true)\n",owned_weight);
   printf("\n");
   printf("time_limit=%s\n",time_limit? "true" : "false");
-  printf("timeout=%lf\n",timeout);
+  printf("timeout=%lf                        (disregarded if time_limit is false; units of seconds)\n",timeout);
   printf("\n");
-  printf("beam_width=%i\n",beam_width);
+  printf("beam_width=%i                      (disregarded if entropy_heuristic is true; 0 for no forward pruning, else how many children should left after pruning)\n",beam_width);
   printf("\n\n");
 }
 
@@ -117,6 +120,11 @@ void AI::set_ts_option(char *variable, char *value, int buffer_size)
   else if(!strncmp(variable,"entropy_heuristic",buffer_size))
   {
     entropy_heuristic=string_to_bool(value,buffer_size);
+  }
+  //NOTE: THIS ONLY APPLIES WHEN ENTROPY_HEURISTIC IS TRUE
+  else if(!strncmp(variable,"distance_sum",buffer_size))
+  {
+    distance_sum=string_to_bool(value,buffer_size);
   }
   else if(!strncmp(variable,"heur_pawn_additions",buffer_size))
   {
@@ -484,12 +492,12 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
     }
     
     //default AI player (what was entered in the AI tournament)
-//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,true,true,1,0.75,false,true,true,hist,12,time_remaining,enemy_time_remaining,false);
+//    move=ts.id_minimax(board,1,3,player_id,move_accumulator,false,false,true,true,1,0.75,false,true,true,hist,12,time_remaining,enemy_time_remaining,false);
     
     //configured AI player
     //NOTE: weight settings and heuristic options are used in place of a heur from an enum
     //NOTE: when fixed_time (last boolean argument) is true, time_remaining is time allocated to this move; in this case time heuristic is not used
-    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,entropy_heuristic,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight,ab_prune,time_limit,hist,beam_width,timeout,900,true);
+    move=ts.id_minimax(board,max_depth,qs_depth,player_id,move_accumulator,entropy_heuristic,distance_sum,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight,ab_prune,time_limit,hist,beam_width,timeout,900,true);
   }
   return move;
 }

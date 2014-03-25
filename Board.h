@@ -21,8 +21,11 @@ class HistTable;
 //bounds for heuristic values; it's needed a few places
 //9 is the value for a queen, 16 is the total number of pieces
 //therefore naive point values can never exceed these bounds
-#define HEURISTIC_MINIMUM (-(16*9))
-#define HEURISTIC_MAXIMUM (16*9)
+//#define HEURISTIC_MINIMUM (-(16*9))
+//#define HEURISTIC_MAXIMUM (16*9)
+
+#define HEURISTIC_MINIMUM (-(9*8*8*100))
+#define HEURISTIC_MAXIMUM (9*8*8*100)
 
 #define WHITE 0
 #define BLACK 1
@@ -96,7 +99,7 @@ public:
   //order children by history table values, given a history table to use
   void history_order_children(HistTable *hist);
   //order children by heursitic values
-  void heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
+  void heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
   
   //an in-place quicksort implementation, sorting by sorting_value values of children (which can be set as anything)
   void quicksort_children(int lower_bound, int upper_bound);
@@ -164,7 +167,7 @@ public:
   double heuristic_value(int player_id, bool max, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight);
   
   //a heuristic where the most possible states (branches) for you and the least possible states for the enemy is considered the best
-  int entropy_heuristic_value(int player_id, bool max);
+  int entropy_heuristic_value(int player_id, bool max, bool distance_sum);
   
   //this is a count of how many tiles on the board are attackable by the given player
   //it's something I'm playing with as part of heuristic calculation

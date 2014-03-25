@@ -255,7 +255,7 @@ void Board::add_child(Board *board)
 
 void Board::remove_child(size_t index)
 {
-  if(index>=0 && index<children.size() && (children[index]!=NULL))
+  if(index<children.size() && (children[index]!=NULL))
   {
     delete children[index];
     children[index]=NULL;
@@ -279,7 +279,7 @@ void Board::clear_children()
 
 void Board::swap_children(size_t a, size_t b)
 {
-  if((a>=0 && a<children.size()) && (b>=0 && b<children.size()))
+  if((a<children.size()) && (b<children.size()))
   {
     //(this could be done without tmp with an xor operation, but memory isn't what we care about here)
     Board *tmp=children[a];
@@ -330,7 +330,7 @@ void Board::history_order_children(HistTable *hist)
 }
 
 //order children by heursitic values
-void Board::heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
+void Board::heuristic_order_children(int player_id, bool max, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight)
 {
   //set sorting values based on heuristic, then do a quicksort
   for(size_t i=0; i<children.size(); i++)
@@ -342,7 +342,7 @@ void Board::heuristic_order_children(int player_id, bool max, bool entropy_heuri
     }
     else
     {
-      child_value=children[i]->entropy_heuristic_value(player_id,max);
+      child_value=children[i]->entropy_heuristic_value(player_id,max,distance_sum);
     }
     
     //if we're not sorting with respect to the max player, flip the order (by flipping the values to sort by)
@@ -1431,23 +1431,95 @@ double Board::heuristic_value(int player_id, bool max, bool heur_pawn_additions,
 
 //a heuristic where the most possible states (branches) for you and the least possible states for the enemy is considered the best
 //note that because we don't prune this heuristic gets REALLY SLOW, since it's seeking towards the largest branching factor possible
-int Board::entropy_heuristic_value(int player_id, bool max)
+int Board::entropy_heuristic_value(int player_id, bool max, bool distance_sum)
 {
-  //also try to minimize the enemy's moves
-  //(we use the count from one prior state because it's the most recent pre-calculated one; better than nothing, anyway)
-  int valid_enemy_move_count=0;
-  if(p!=NULL)
+  //if this is the alternate entropy-based heuristic; the manhatten distances of all movments
+  if(distance_sum)
   {
-    valid_enemy_move_count=p->get_children().size();
+    int manhatten_distance=0;
+    
+    for(size_t i=0;i<children.size();i++)
+    {
+      if(children[i]->last_move_made!=NULL)
+      {
+        int delta_file=abs((children[i]->last_move_made->fromFile)-(children[i]->last_move_made->toFile));
+        int delta_rank=abs((children[i]->last_move_made->fromRank)-(children[i]->last_move_made->toRank));
+	
+        manhatten_distance+=(delta_file+delta_rank);
+      }
+    }
+    
+    if(!max)
+    {
+      return (-manhatten_distance);
+    }
+    return manhatten_distance;
   }
-  
-  if(!max)
+  else
   {
-    return (-children.size()+valid_enemy_move_count);
+    //try to minimize the enemy's moves while maximizing our moves
+    int enemy_move_value=0;
+    int total_move_value=0;
+    
+    //file
+    for(int f=1; f<=width; f++)
+    {
+      //rank
+      for(int r=1; r<=height; r++)
+      {
+        //if there is any kind of piece here, think about things
+        if(get_element(f,r)!=NULL)
+        {
+          vector<_Move*> piece_moves=legal_moves(get_element(f,r));
+          
+          int piece_point_value=point_value(get_element(f,r)->type);
+          
+          if(get_element(f,r)->type=='P')
+          {
+            //if this position is past the center line ("past the center" depends on who is at play)
+            //add a value proportional to how far away the pawn is from the end
+            
+            if(player_id==WHITE && r>=5)
+            {
+              piece_point_value+=(4-(8-r));
+            }
+            else if(player_id==BLACK && r<=4)
+            {
+              piece_point_value+=(5-r);
+            }
+          }
+          
+          //if there's a piece there and we own it, count it
+          if(get_element(f,r)->owner==player_id)
+          {
+            //move value proportional to points and possible moves
+            total_move_value+=(piece_point_value)*(piece_moves.size());
+          }
+          //if there's a piece there and we DON'T, count it (as an enemy)
+//          else if(get_element(f,r)->owner!=player_id)
+          else
+          {
+            //move value proportional to points and possible moves
+            enemy_move_value+=(piece_point_value)*(piece_moves.size());
+          }
+          
+          for(size_t i=0;i<piece_moves.size();i++)
+          {
+            free(piece_moves[i]);
+          }
+        }
+      }
+    }
+    
+    if(!max)
+    {
+      return (-total_move_value+enemy_move_value);
+//      return (-total_move_value);
+    }
+    
+    return (total_move_value-enemy_move_value);
+//    return (total_move_value);
   }
-  
-  
-  return (children.size()-valid_enemy_move_count);
 }
 
 //this is a count of how many tiles on the board are attackable by the given player

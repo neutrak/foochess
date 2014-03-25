@@ -36,6 +36,9 @@ private:
   
   //whether or not to use the entropy (branching-factor) heuristic
   bool entropy_heuristic;
+  //whether or not to use the alternate entropy heuristic (sum of manhatten distances of all moves)
+  //NOTE: THIS ONLY APPLIES WHEN ENTROPY_HEURISTIC IS TRUE
+  bool distance_sum;
   
   //heurstic stuff
   bool heur_pawn_additions;

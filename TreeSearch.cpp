@@ -338,7 +338,7 @@ void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id,
     if(beam_width < node->get_children().size())
     {
       //order children by heuristic, so the first n children are the best n children
-      node->heuristic_order_children(player_id,max,false,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight);
+      node->heuristic_order_children(player_id,max,false,false,heur_pawn_additions,heur_position_additions,enemy_weight,owned_weight);
       
       for(size_t i=beam_width; i<(node->get_children().size()); i++)
       {
@@ -355,7 +355,7 @@ void TreeSearch::beam_prune(Board *node, unsigned int beam_width, int player_id,
 //this serves the functions of dl_maxV and dl_minV, with various optional additions
 //those functions themselves just carefully choose the arguments to give to this
 //max should be true to max, false to min
-double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used)
+double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, int player_id, bool max, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, double alpha, double beta, vector<_Move*> move_accumulator, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used)
 {
   //NOTE: we can't do the terminal node checks before the generate_moves call
   //because whether it's a terminal node or not depends on move generation
@@ -414,8 +414,7 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
     
     //if we're using the entropy heuristic call a different function
     if(entropy_heuristic){
-//      return node->entropy_heuristic_value(player_id, max, move_count);
-      return node->entropy_heuristic_value(player_id, max);
+      return node->entropy_heuristic_value(player_id, max, distance_sum);
     }
     //because the above if returned this is effectively a mutually exclusive case
     return node->heuristic_value(player_id, max, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight);
@@ -449,7 +448,7 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
     gettimeofday(&start_time,NULL);
     
     //NOTE: on the recursive calls we generate the moves for the /other/ player
-    double opponent_move=min_or_max(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, entropy_heuristic, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, alpha, beta, new_move_acc, time_limit, hist, beam_width, time_for_move, time_used);
+    double opponent_move=min_or_max(node->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, !max, entropy_heuristic, distance_sum, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, alpha, beta, new_move_acc, time_limit, hist, beam_width, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -520,7 +519,7 @@ double TreeSearch::min_or_max(Board *node, int depth_limit, int qs_depth_limit, 
 }
 
 //depth-limited minimax
-_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used)
+_Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_for_move, double time_used)
 {
 //  printf("dl_minimax debug 0, got a board with %i children\n", root->get_children().size());
   
@@ -584,7 +583,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
     //get the heuristic value for this node (or better, if available; see dl_minV for more information)
     
     //this is a dl_minV call, using a more general function
-    double heuristic=min_or_max(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, entropy_heuristic, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, alpha, beta, new_move_acc, time_limit, hist, beam_width, time_for_move, time_used);
+    double heuristic=min_or_max(root->get_children()[i], depth_limit-1, qs_depth_limit, !player_id, false, entropy_heuristic, distance_sum, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, alpha, beta, new_move_acc, time_limit, hist, beam_width, time_for_move, time_used);
     
     struct timeval end_time;
     gettimeofday(&end_time,NULL);
@@ -650,7 +649,7 @@ _Move *TreeSearch::dl_minimax(Board *root, int depth_limit, int qs_depth_limit, 
 }
 
 //iterative deepening depth-limited minimax with an option to time-limit instead of using a given max depth
-_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining, bool fixed_time)
+_Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_limit, int player_id, vector<_Move*> move_accumulator, bool entropy_heuristic, bool distance_sum, bool heur_pawn_additions, bool heur_position_additions, double enemy_weight, double owned_weight, bool prune, bool time_limit, HistTable *hist, unsigned int beam_width, double time_remaining, double enemy_time_remaining, bool fixed_time)
 {
   _Move *end_move=NULL;
   
@@ -694,7 +693,7 @@ _Move *TreeSearch::id_minimax(Board *root, int max_depth_limit, int qs_depth_lim
     _Move *old_move=end_move;
     
     //NOTE: when not using a history table, hist will be NULL
-    end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, entropy_heuristic, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, time_limit, hist, beam_width, time_for_move, time_used);
+    end_move=dl_minimax(root, depth_limit, qs_depth_limit, player_id, new_move_acc, entropy_heuristic, distance_sum, heur_pawn_additions, heur_position_additions, enemy_weight, owned_weight, prune, time_limit, hist, beam_width, time_for_move, time_used);
     
     //if a new move was successfully generated
     if(end_move!=NULL)
