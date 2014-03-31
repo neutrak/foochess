@@ -1436,7 +1436,7 @@ int Board::entropy_heuristic_value(int player_id, bool max, bool distance_sum)
   //if this is the alternate entropy-based heuristic; the manhatten distances of all movments
   if(distance_sum)
   {
-    int manhatten_distance=0;
+    int dist_point_total=0;
     
     for(size_t i=0;i<children.size();i++)
     {
@@ -1445,21 +1445,27 @@ int Board::entropy_heuristic_value(int player_id, bool max, bool distance_sum)
         int delta_file=abs((children[i]->last_move_made->fromFile)-(children[i]->last_move_made->toFile));
         int delta_rank=abs((children[i]->last_move_made->fromRank)-(children[i]->last_move_made->toRank));
 	
-        manhatten_distance+=(delta_file+delta_rank);
+        int manhatten_distance=(delta_file+delta_rank);
+        int piece_value_multiplyer=point_value(get_element(children[i]->last_move_made->fromFile,children[i]->last_move_made->fromRank)->type);
+        dist_point_total+=((manhatten_distance)*piece_value_multiplyer);
       }
     }
     
     if(!max)
     {
-      return (-manhatten_distance);
+      return (-dist_point_total);
     }
-    return manhatten_distance;
+    return dist_point_total;
   }
   else
   {
     //try to minimize the enemy's moves while maximizing our moves
     int enemy_move_value=0;
     int total_move_value=0;
+    
+    //we've combined entropy with normal points in this heuristic
+    //this is how much to multiply the point value by for scale before adding entropy for the piece
+    int point_weight=5;
     
     //file
     for(int f=1; f<=width; f++)
@@ -1474,6 +1480,7 @@ int Board::entropy_heuristic_value(int player_id, bool max, bool distance_sum)
           
           int piece_point_value=point_value(get_element(f,r)->type);
           
+          //this is the pawn addition to the points heuristic
           if(get_element(f,r)->type=='P')
           {
             //if this position is past the center line ("past the center" depends on who is at play)
@@ -1493,14 +1500,14 @@ int Board::entropy_heuristic_value(int player_id, bool max, bool distance_sum)
           if(get_element(f,r)->owner==player_id)
           {
             //move value proportional to points and possible moves
-            total_move_value+=(piece_point_value)*(piece_moves.size());
+            total_move_value+=((piece_point_value)*(point_weight))+(piece_moves.size());
           }
           //if there's a piece there and we DON'T, count it (as an enemy)
 //          else if(get_element(f,r)->owner!=player_id)
           else
           {
             //move value proportional to points and possible moves
-            enemy_move_value+=(piece_point_value)*(piece_moves.size());
+            enemy_move_value+=((piece_point_value)*(point_weight))+(piece_moves.size());
           }
           
           for(size_t i=0;i<piece_moves.size();i++)
