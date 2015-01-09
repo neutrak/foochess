@@ -58,7 +58,7 @@ void AI::output_ts_settings()
   printf("distance_sum=%s                    (disregarded if entropy_heuristic is false)\n",distance_sum? "true" : "false");
   printf("\n");
   printf("heur_pawn_additions=%s             (disregarded if entropy_heuristic is true)\n",heur_pawn_additions? "true" : "false");
-  printf("heur_position_additions=%s         (disregarded if entropy_heuristic is true))\n",heur_position_additions? "true" : "false");
+  printf("heur_position_additions=%s         (disregarded if entropy_heuristic is true)\n",heur_position_additions? "true" : "false");
   printf("\n");
   printf("enemy_weight=%lf                   (disregarded if entropy_heuristic is true)\n",enemy_weight);
   printf("owned_weight=%lf                   (disregarded if entropy_heuristic is true)\n",owned_weight);
