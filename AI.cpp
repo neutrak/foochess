@@ -221,7 +221,7 @@ void AI::configure(int player_id)
       output_ts_settings();
       printf("To change a value, state variable=new_value\n");
       printf("for example timeout=40.0 to make the timeout 40 seconds\n");
-      printf("Setting (quit or q to quit): ");
+      printf("Setting (done or d to finish with settings and start playing): ");
       
       //get some input!
       char input_buffer[BUFFER_SIZE];
@@ -229,7 +229,7 @@ void AI::configure(int player_id)
       scanf("%s",input_buffer);
       input_buffer[BUFFER_SIZE-1]='\0';
       
-      if((!strncmp(input_buffer,"quit",BUFFER_SIZE)) || (!strncmp(input_buffer,"q",BUFFER_SIZE)))
+      if((!strncmp(input_buffer,"done",BUFFER_SIZE)) || (!strncmp(input_buffer,"d",BUFFER_SIZE)))
       {
         options_done=true;
       }
