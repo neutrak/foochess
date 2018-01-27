@@ -40,7 +40,10 @@ whether or not to use a history table, saving the best moves from previous searc
 how many moves to keep a history table before making a new one (0 for never reset); this is ignored when there is no history table in use
 .TP
 \fBentropy_heuristic\fP
-whether or not to use the alternative entropy heuristic, rather than points; just something I'm playing around with, you can probably just ignore this
+whether or not to use the alternative entropy heuristic, rather than points; just something I'm playing around with, you can probably just ignore this; the entropy heuristic considers the board state which maximizes its potential moves to be the best
+.TP
+\fBdistance_sum\fP
+whether or not to factor in the manhattan distance of the moves when using the entropy heuristic
 .TP
 \fBheur_pawn_additions\fP
 when true, pawns are given an additional 1 point value for every position past the center line, and 9 points are added to the point value when the enemy is in check
