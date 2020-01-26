@@ -402,10 +402,19 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, int pi
 //(no arguments since all relevant data is already stored in the Board class)
 void Board::output_board()
 {
+  //file labels
+  printf("   |");
+  for(size_t file=1; file<=8; file++)
+  {
+    printf(" %c |",(char)(file-1+'a'));
+  }
+  printf("\n");
+  
   // Print out the current board state
-  printf("   +---+---+---+---+---+---+---+---+\n");
+  printf("   +---+---+---+---+---+---+---+---+   \n");
   for(size_t rank=8; rank>0; rank--)
   {
+    //rank labels
     printf(" %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
@@ -431,9 +440,12 @@ void Board::output_board()
       }
       printf("|");
     }
-    printf("\n   +---+---+---+---+---+---+---+---+\n");
+    //rank labels
+    printf(" %zu ",rank);
+    printf("\n   +---+---+---+---+---+---+---+---+   \n");
   }
   
+  //file labels
   printf("   |");
   for(size_t file=1; file<=8; file++)
   {
@@ -445,10 +457,19 @@ void Board::output_board()
 //output the board in reverse so that a player playing as black can see it easily
 void Board::output_reverse_board()
 {
+  //file labels
+  printf("   |");
+  for(size_t file=1; file<=8; file++)
+  {
+    printf(" %c |",(char)(file-1+'a'));
+  }
+  printf("\n");
+  
   // Print out the current board state
   printf("   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=1; rank<=8; rank++)
   {
+    //rank labels
     printf(" %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
@@ -474,9 +495,12 @@ void Board::output_reverse_board()
       }
       printf("|");
     }
+    //rank labels
+    printf(" %zu ",rank);
     printf("\n   +---+---+---+---+---+---+---+---+\n");
   }
   
+  //file labels
   printf("   |");
   for(size_t file=1; file<=8; file++)
   {

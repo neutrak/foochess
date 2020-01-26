@@ -20,6 +20,11 @@ int main(int argc, char *argv[])
     {
       printf("foochess version %s\n",VERSION);
     }
+    
+    //TODO: add an argument to allow a user to import a board state into the starting point of a game
+    //via a board state text file (.brd ?)
+    //thus providing a sort of crude save/load functionality
+    
     //any cli arguments terminate the program before really running
     exit(0);
   }
