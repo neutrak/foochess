@@ -343,6 +343,7 @@ _Move *AI::user_move(Board *board, int player_id)
   {
     printf("Move Selection (expected format <from file><from rank><to file><to rank>)\n");
     printf("for example a2a3 would move from location a,2 to location a,3 (quit or q to quit)\n");
+    //TODO: add documentation for "load" and "save" commands to load from and save to a board state file
     printf("Enter move: ");
     scanf("%s",input_buffer);
     //always null-terminate
@@ -355,6 +356,8 @@ _Move *AI::user_move(Board *board, int player_id)
       exit(0);
       break;
     }
+    
+    //TODO: add "load" and "save" commands to load from and save to a board state file
     
     //convert locations from characters to internal coordinate representation
     int from_file=tolower(input_buffer[0])-'a'+1;

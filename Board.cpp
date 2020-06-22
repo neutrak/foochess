@@ -104,6 +104,13 @@ Board::Board()
   }
 }
 
+//TODO: write Board::load_from_file(char *fname)
+//which works just like the constructor except instead of placing pieces and setting other state based on starting conditions
+//loads that from a textual description of the board in a humanly-readable format
+
+//TODO: write Board::save_to_file(char *fname)
+//which saves the current board state into a save file with the given name
+
 //place a piece on the board given some information about the piece
 void Board::place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements)
 {

@@ -32,6 +32,9 @@ int main(int argc, char *argv[])
   //make a board to play on
   Board *board=new Board();
   
+  //TODO: if a save file is given then load the board state from that
+  //using Board::load_from_file(char *fname)
+  
   //create some AI player objects
   AI *white_player=new AI();
   white_player->init();
