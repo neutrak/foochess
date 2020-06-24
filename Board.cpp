@@ -1,5 +1,6 @@
 #include "Board.h"
 #include "stdio.h"
+#include "string.h"
 #include <stdlib.h>
 
 //constructor
@@ -107,6 +108,236 @@ Board::Board()
 //TODO: write Board::load_from_file(char *fname)
 //which works just like the constructor except instead of placing pieces and setting other state based on starting conditions
 //loads that from a textual description of the board in a humanly-readable format
+void Board::load_from_file(const char *fname)
+{
+  //NOTE: this is called after the constructor
+  //and as such it does not initialize the basic state variables
+  //but rather just overrides them as needed
+  
+  FILE *fp=fopen(fname,"r");
+  if(fp==NULL)
+  {
+    fprintf(stderr,"Warn: Could not open file %s; will have default board state instead!\n",fname);
+    return;
+  }
+  
+  //this is a buffer that's only one character long
+  //because longer buffers are quicker and more efficient
+  //but there's nothing wrong with reading one character at a time if you're patient
+  int one_char_buf=fgetc(fp);
+  
+  //one line worth of input
+  char linebuf[BUFFER_SIZE];
+  unsigned int linebuf_idx=0;
+  
+  unsigned int lineno=1;
+
+  //whether we are currently reading the board line-by-line or not
+  bool in_board_lines=false;
+  
+  while(one_char_buf!=EOF)
+  {
+    linebuf[linebuf_idx]=one_char_buf;
+    linebuf_idx++;
+    
+//    printf("%c",one_char_buf); //debug
+    if(one_char_buf=='\n')
+    {
+      //end of line, so null-terminate the line buffer
+      linebuf[linebuf_idx]='\0';
+      
+      //and load that line
+      in_board_lines=this->load_one_save_line((const char *)(linebuf),in_board_lines);
+      
+      //reset the line buffer for the next line
+      linebuf_idx=0;
+      //and update the line number
+      lineno++;
+    }
+    
+    //read the next character
+    one_char_buf=fgetc(fp);
+  }
+
+  if(ferror(fp))
+  {
+    fprintf(stderr,"Warn: I/O error when reading file %s; will have default board state instead!\n",fname);
+    return;
+  }
+  else if(feof(fp))
+  {
+    printf("Loaded Save File %s successfully\n",fname);
+  }
+  
+  fclose(fp);
+  
+}
+
+//load a single line from a save file
+bool Board::load_one_save_line(const char *line, bool in_board_lines)
+{
+  //if line starts with "//"
+  if((strlen(line)>0) && (line[0]=='/') && (line[1]=='/'))
+  {
+    //those are comments; ignore them
+    return in_board_lines;
+  }
+  //if line is exactly equal to "board_start"
+  else if(strncmp(line,"board_start\n",BUFFER_SIZE)==0)
+  {
+    //start reading the board state, noting what the starting line was
+    return true;
+  }
+  //if the line is exactly equal to "board_end"
+  else if(strncmp(line,"board_end\n",BUFFER_SIZE)==0)
+  {
+    //then stop reading the board state; what we read now is var=value pairs
+    return false;
+  }
+  //if we're currently reading in board lines
+  else if(in_board_lines)
+  {
+    this->load_board_save_line(line);
+  }
+  else
+  {
+    const char *eq_idx=strstr(line,"=");
+    if(eq_idx!=NULL){
+      //TODO: parse var from everything before eq_idx
+      //parse value from everything after eq_idx
+      //and set var=value in board state
+    }
+  }
+  return in_board_lines;
+}
+
+//load a single line of board state, now that we know we're in that section
+//a board line may be one of the following or something else in that format:
+/*
+   | a | b | c | d | e | f | g | h |
+   +---+---+---+---+---+---+---+---+   
+ 8 |*R |*N |*B |*Q |*K |*B |*N |*R | 8 
+   +---+---+---+---+---+---+---+---+   
+ 7 |*P |*P |*P |*P |*P |*P |*P |*P | 7 
+   +---+---+---+---+---+---+---+---+   
+ 6 |   |   |   |   |   |   |   |   | 6 
+   +---+---+---+---+---+---+---+---+   
+ 5 |   |   |   |   |   |   |   |   | 5 
+   +---+---+---+---+---+---+---+---+   
+ 4 |   |   |   |   |   |   |   |   | 4 
+   +---+---+---+---+---+---+---+---+   
+ 3 |   |   |   |   |   |   |   |   | 3 
+   +---+---+---+---+---+---+---+---+   
+ 2 | P | P | P | P | P | P | P | P | 2 
+   +---+---+---+---+---+---+---+---+   
+ 1 | R | N | B | Q | K | B | N | R | 1 
+   +---+---+---+---+---+---+---+---+   
+   | a | b | c | d | e | f | g | h |
+*/
+void Board::load_board_save_line(const char *line)
+{
+  unsigned int line_idx=0;
+  
+  char entry_buf[BUFFER_SIZE];
+  unsigned int entry_buf_idx=0;
+  
+  //which |-delimited entry in the line we're currently at
+  int entry_idx=0;
+  int chess_rank=0;
+  
+  //read a character at a time
+  while(line_idx<strlen(line))
+  {
+    //if this character is | then that indicates the current entry should end
+    //and a new entry should start
+    if((line[line_idx]=='|') || (line[line_idx]=='\n'))
+    {
+      entry_buf[entry_buf_idx]='\0';
+      
+      unsigned int entry_buf_len=entry_buf_idx;
+      
+      //remove any whitespace in this entry (including but not only at the ends)
+      unsigned int trim_buf_idx=0;
+      char trim_buf[BUFFER_SIZE];
+      
+      for(entry_buf_idx=0;entry_buf_idx<entry_buf_len;entry_buf_idx++)
+      {
+        switch(entry_buf[entry_buf_idx])
+        {
+          case ' ':
+          case '\t':
+          case '\r':
+          case '\n':
+            break;
+          default:
+            trim_buf[trim_buf_idx]=entry_buf[entry_buf_idx];
+            trim_buf_idx++;
+            break;
+        }
+      }
+      //always null terminate strings
+      trim_buf[trim_buf_idx]='\0';
+      strcpy(entry_buf,trim_buf);
+      
+      //ignore blank entries
+      if(strlen(entry_buf)>0)
+      {
+        
+//        printf("chess_rank %i\n",chess_rank); //debug
+//        printf("entry_idx %i: \"%s\"\n",entry_idx,entry_buf); //debug
+        
+        //if this is the first entry in the line
+        if(entry_idx==0)
+        {
+          //if it's an integer then that's the rank of this line
+          chess_rank=atoi(entry_buf);
+          
+        }
+        //otherwise
+        else
+        {
+          char chess_file='a';
+          if(entry_idx>0)
+          {
+            chess_file=((char)entry_idx-1)+'a';
+          }
+          
+          //TODO: if chess_file and/or chess_rank are out of bounds
+          //chess_rank (aka row) in [1,8]
+          //chess_file (aka column) [a,h]
+          //then return without placing a piece
+          if(chess_file<'a' || chess_file>'h' || chess_rank<1 || chess_rank>8){
+            return;
+          }
+          
+          printf("%s at %c%i\n",entry_buf,chess_file,chess_rank);
+          
+          //TODO: implement the below logic
+          //if it starts with "*" then it's a black-controlled piece
+          //so set a flag for that and then remove it from the front of the string
+          //the file of the piece is equal to (entry_idx-1)+'a'
+          //set up a piece at the given rank and file
+        }
+      }
+      
+      //reset the buffer for next time
+      entry_buf_idx=0;
+      
+      //update the index of the entry itself within the line
+      entry_idx++;
+    }
+    else
+    {
+      //extend the current entry with the newly-read character until we hit the delimeter
+      entry_buf[entry_buf_idx]=line[line_idx];
+      entry_buf_idx++;
+    }
+    
+    line_idx++;
+  }
+}
+
+
 
 //TODO: write Board::save_to_file(char *fname)
 //which saves the current board state into a save file with the given name
@@ -114,26 +345,26 @@ Board::Board()
 //place a piece on the board given some information about the piece
 void Board::place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements)
 {
-    _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
-    if(new_piece==NULL)
-    {
-      fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
-      exit(1);
-    }
-    
-    new_piece->id=id;
-    new_piece->file=file;
-    new_piece->rank=rank;
-    new_piece->hasMoved=hasMoved;
-    new_piece->type=type;
-    new_piece->owner=owner;
-    
-    //and of course nothing has yet been checked
-    new_piece->haveChecked=haveChecked;
-    new_piece->movements=movements;
-    
-    //the -1 is to switch 1-indexing to 0-indexing
-    state[((rank-1)*width)+(file-1)]=new_piece;
+  _SuperPiece *new_piece=(_SuperPiece*)(malloc(sizeof(_SuperPiece)));
+  if(new_piece==NULL)
+  {
+    fprintf(stderr,"Err: Out of RAM!? (malloc failed)\n");
+    exit(1);
+  }
+  
+  new_piece->id=id;
+  new_piece->file=file;
+  new_piece->rank=rank;
+  new_piece->hasMoved=hasMoved;
+  new_piece->type=type;
+  new_piece->owner=owner;
+  
+  //and of course nothing has yet been checked
+  new_piece->haveChecked=haveChecked;
+  new_piece->movements=movements;
+  
+  //the -1 is to switch 1-indexing to 0-indexing
+  state[((rank-1)*width)+(file-1)]=new_piece;
 }
 
 //copy constructor

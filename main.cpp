@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
   
   //TODO: if a save file is given then load the board state from that
   //using Board::load_from_file(char *fname)
+  board->load_from_file("./save-files/first-move.bst"); //debug
   
   //create some AI player objects
   AI *white_player=new AI();

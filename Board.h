@@ -5,6 +5,9 @@
 #include "SuperPiece.h"
 #include "HistTable.h"
 #include <vector>
+
+#define BUFFER_SIZE 1024
+
 using namespace std;
 
 enum algorithm
@@ -65,6 +68,11 @@ private:
 public:
   //constructor, makes board internal structures for a starting state
   Board();
+  
+  //load a board state from a save file
+  void load_from_file(const char *fname);
+  bool load_one_save_line(const char *line,  bool in_board_lines);
+  void load_board_save_line(const char *line);
   
   //place a piece on the board given some information about the piece
   void place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements);
