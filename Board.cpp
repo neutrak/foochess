@@ -339,10 +339,6 @@ void Board::load_board_save_line(const char *line)
       //ignore blank entries
       if(strlen(entry_buf)>0)
       {
-        
-//        printf("chess_rank %i\n",chess_rank); //debug
-//        printf("entry_idx %i: \"%s\"\n",entry_idx,entry_buf); //debug
-        
         //if this is the first entry in the line
         if(entry_idx==0)
         {
@@ -369,7 +365,9 @@ void Board::load_board_save_line(const char *line)
             return;
           }
           
+#ifdef DEBUG
           printf("%s at %c%i\n",entry_buf,chess_file,chess_rank);
+#endif
           
           unsigned int piece_color=WHITE;
           char piece_type=entry_buf[0];
@@ -418,7 +416,9 @@ void Board::load_rank_file_setting_line(const char *var, const char *val)
       {
         if(get_element(f,r)!=NULL){
           get_element(f,r)->movements=atoi(val);
+#ifdef DEBUG
           printf("Dbg: %c%i_movements=%i\n",((f-1)+'a'),r,get_element(f,r)->movements); //debug
+#endif
         }
       }
     }
