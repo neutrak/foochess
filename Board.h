@@ -69,10 +69,14 @@ public:
   //constructor, makes board internal structures for a starting state
   Board();
   
+  //initialize in_check state based on current position of pieces
+  void check_in_check();
+  
   //load a board state from a save file
-  void load_from_file(const char *fname);
-  bool load_one_save_line(const char *line,  bool in_board_lines);
+  void load_from_file(const char *fname, int *start_player_id);
+  bool load_one_save_line(const char *line,  bool in_board_lines, int *start_player_id);
   void load_board_save_line(const char *line);
+  void load_rank_file_setting_line(const char *var, const char *val);
   
   //place a piece on the board given some information about the piece
   void place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements);

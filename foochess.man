@@ -2,7 +2,7 @@
 .SH NAME
 foochess \- a simple ascii chess program with configurable AI
 .SH SYNOPSIS
-\fBfoochess\fP [ --help | --version ]
+\fBfoochess\fP [ --help | --version | --load [file] ]
 .SH DESCRIPTION
 \fBfoochess\fP runs program; default configuration is hard-coded but changable at runtime
 .SS Options
@@ -12,6 +12,9 @@ tells you to read this man page
 .TP
 \fB--version\fP
 outputs the version of this software, in the form <major int>.<minor int>; major counts redesigns, minor counts updates; for both, even numbers are stable, odd numbers are unstable/testing
+.TP
+\fB--load [file]\fP
+loads the given file as the initial game state instead of the standard chess starting positions; this can be used to save and reload games as well as to load initial starting states for variants such as chess 960; as an example of the format, see save-files/first-move.bst
 .SS Algorithms
 .TP
 \fBUSER\fP

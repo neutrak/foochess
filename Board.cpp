@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "string.h"
 #include <stdlib.h>
+#include <ctype.h>
 
 //constructor
 //makes internal structures based for a starting state
@@ -83,6 +84,12 @@ Board::Board()
   moves_since_capture=0;
   moves_since_advancement=0;
   
+  //check whether or not anyone's in check
+  check_in_check();
+}
+
+void Board::check_in_check()
+{
   //check if we're in check (get it?)
   _SuperPiece *white_king=find_king(WHITE);
   if(white_king!=NULL)
@@ -105,14 +112,28 @@ Board::Board()
   }
 }
 
-//TODO: write Board::load_from_file(char *fname)
-//which works just like the constructor except instead of placing pieces and setting other state based on starting conditions
-//loads that from a textual description of the board in a humanly-readable format
-void Board::load_from_file(const char *fname)
+//loads data from a textual description of the board in a humanly-readable format
+//and sets the internal state of the board to match that file's description
+//as a return/side-effect, sets the player_id to the at-play player
+void Board::load_from_file(const char *fname, int *start_player_id)
 {
   //NOTE: this is called after the constructor
   //and as such it does not initialize the basic state variables
   //but rather just overrides them as needed
+
+  //clear out any existing pieces on the board to start with a blank slate
+  //since normally we would start with the initial starting position board state
+  for(int f=1;f<=8;f++)
+  {
+    for(int r=1;r<=8;r++)
+    {
+      if(get_element(f,r)!=NULL)
+      {
+        free(get_element(f,r));
+        state[((r-1)*width)+(f-1)]=NULL;
+      }
+    }
+  }
   
   FILE *fp=fopen(fname,"r");
   if(fp==NULL)
@@ -147,7 +168,7 @@ void Board::load_from_file(const char *fname)
       linebuf[linebuf_idx]='\0';
       
       //and load that line
-      in_board_lines=this->load_one_save_line((const char *)(linebuf),in_board_lines);
+      in_board_lines=load_one_save_line((const char *)(linebuf),in_board_lines,start_player_id);
       
       //reset the line buffer for the next line
       linebuf_idx=0;
@@ -174,7 +195,7 @@ void Board::load_from_file(const char *fname)
 }
 
 //load a single line from a save file
-bool Board::load_one_save_line(const char *line, bool in_board_lines)
+bool Board::load_one_save_line(const char *line, bool in_board_lines, int *start_player_id)
 {
   //if line starts with "//"
   if((strlen(line)>0) && (line[0]=='/') && (line[1]=='/'))
@@ -197,15 +218,51 @@ bool Board::load_one_save_line(const char *line, bool in_board_lines)
   //if we're currently reading in board lines
   else if(in_board_lines)
   {
-    this->load_board_save_line(line);
+    load_board_save_line(line);
   }
   else
   {
-    const char *eq_idx=strstr(line,"=");
-    if(eq_idx!=NULL){
-      //TODO: parse var from everything before eq_idx
+    const char *eq_sign=strstr(line,"=");
+    if(eq_sign!=NULL)
+    {
+      int eq_idx=(eq_sign-line);
+      
+      //parse var from everything before eq_idx
+      char var[BUFFER_SIZE];
+      strncpy(var,line,eq_idx);
+      var[eq_idx]='\0';
+      
       //parse value from everything after eq_idx
+      int val_chr_cnt=strlen(line)-eq_idx;
+      char val[BUFFER_SIZE];
+      strncpy(val,line+eq_idx+1,val_chr_cnt);
+      val[val_chr_cnt]='\0';
+      
+      //if either var or value is null, skip this
+      if((strlen(var)==0) || (strlen(val)==0))
+      {
+        fprintf(stderr,"Warn: Skipping line \"%s\" because it has an empty variable and/or value\n",line);
+        return in_board_lines;
+      }
+      
       //and set var=value in board state
+      
+      //if this is setting the player id
+      if(!strcmp(var,"start_player_id"))
+      {
+        if(tolower(val[0])=='w')
+        {
+          *start_player_id=WHITE;
+        }
+        else if(tolower(val[0])=='b')
+        {
+          *start_player_id=BLACK;
+        }
+        return in_board_lines;
+      }
+      
+      load_rank_file_setting_line(var,val);
+      return in_board_lines;
     }
   }
   return in_board_lines;
@@ -296,27 +353,38 @@ void Board::load_board_save_line(const char *line)
         //otherwise
         else
         {
+          //get the chess file based on the column we're currently in on the line
           char chess_file='a';
           if(entry_idx>0)
           {
             chess_file=((char)entry_idx-1)+'a';
           }
           
-          //TODO: if chess_file and/or chess_rank are out of bounds
+          //if chess_file and/or chess_rank are out of bounds
           //chess_rank (aka row) in [1,8]
           //chess_file (aka column) [a,h]
           //then return without placing a piece
-          if(chess_file<'a' || chess_file>'h' || chess_rank<1 || chess_rank>8){
+          if(chess_file<'a' || chess_file>'h' || chess_rank<1 || chess_rank>8)
+          {
             return;
           }
           
           printf("%s at %c%i\n",entry_buf,chess_file,chess_rank);
           
-          //TODO: implement the below logic
+          unsigned int piece_color=WHITE;
+          char piece_type=entry_buf[0];
+          
           //if it starts with "*" then it's a black-controlled piece
-          //so set a flag for that and then remove it from the front of the string
-          //the file of the piece is equal to (entry_idx-1)+'a'
+          if((strlen(entry_buf)>1) && piece_type=='*')
+          {
+            piece_type=entry_buf[1];
+            piece_color=BLACK;
+          }
+          
           //set up a piece at the given rank and file
+          //NOTE: movements will be set separately with location_movements= directives in the config file
+          //so for now they are initialized to 0
+          place_piece(0,piece_color,((chess_file-'a')+1),chess_rank,false,piece_type,false,0);
         }
       }
       
@@ -337,7 +405,25 @@ void Board::load_board_save_line(const char *line)
   }
 }
 
-
+//load settings which apply to a piece at a certain
+void Board::load_rank_file_setting_line(const char *var, const char *val)
+{
+  for(int f=1; f<=8; f++)
+  {
+    for(int r=1; r<=8; r++)
+    {
+      char var_buf[BUFFER_SIZE];
+      sprintf(var_buf,"%c%i_movements",((f-1)+'a'),r);
+      if(!strcmp(var,var_buf))
+      {
+        if(get_element(f,r)!=NULL){
+          get_element(f,r)->movements=atoi(val);
+          printf("Dbg: %c%i_movements=%i\n",((f-1)+'a'),r,get_element(f,r)->movements); //debug
+        }
+      }
+    }
+  }
+}
 
 //TODO: write Board::save_to_file(char *fname)
 //which saves the current board state into a save file with the given name

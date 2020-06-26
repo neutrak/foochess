@@ -23,10 +23,7 @@ board_start
    | a | b | c | d | e | f | g | h |
 board_end
 
-player_turn=white
-
-white_check=false
-black_check=false
+start_player_id=WHITE
 
 //NOTE:these are movement counts for various pieces
 //in file-rank notation for their current position on the board
