@@ -78,6 +78,8 @@ public:
   void load_board_save_line(const char *line);
   void load_rank_file_setting_line(const char *var, const char *val);
   
+  void save_to_file(FILE *outfile, int player_id);
+  
   //place a piece on the board given some information about the piece
   void place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements);
   
@@ -119,8 +121,8 @@ public:
   int quicksort_partition_children(int lower_bound, int upper_bound, int pivot_index);
   
   //display whatever the current state of the board is
-  void output_board();
-  void output_reverse_board();
+  void output_board(FILE *outfile);
+  void output_reverse_board(FILE *outfile);
   
   //finds the king
   _SuperPiece *find_king(int player_id);

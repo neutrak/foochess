@@ -425,8 +425,35 @@ void Board::load_rank_file_setting_line(const char *var, const char *val)
   }
 }
 
-//TODO: write Board::save_to_file(char *fname)
-//which saves the current board state into a save file with the given name
+//saves the current board state into a save file (or stdout, if desired)
+void Board::save_to_file(FILE *outfile, int player_id)
+{
+  fprintf(outfile,"board_start\n");
+  if(player_id==WHITE)
+  {
+    output_board(outfile);
+  }
+  else
+  {
+    output_reverse_board(outfile);
+  }
+  
+  fprintf(outfile,"board_end\n");
+  fprintf(outfile,"\n\n");
+  
+  for(int f=1;f<=8;f++)
+  {
+    for(int r=1;r<=8;r++)
+    {
+      if(get_element(f,r)!=NULL)
+      {
+        fprintf(outfile,"%c%i_movements=%i\n",(char)((f-1)+'a'),r,get_element(f,r)->movements);
+      }
+    }
+  }
+  
+  fprintf(outfile,"\nstart_player_id=%s\n",(player_id==WHITE?"WHITE":"BLACK"));
+}
 
 //place a piece on the board given some information about the piece
 void Board::place_piece(int id, int owner, int file, int rank, int hasMoved, int type, bool haveChecked, int movements)
@@ -724,22 +751,22 @@ int Board::quicksort_partition_children(int lower_bound, int upper_bound, int pi
 
 //output the board
 //(no arguments since all relevant data is already stored in the Board class)
-void Board::output_board()
+void Board::output_board(FILE *outfile)
 {
   //file labels
-  printf("   |");
+  fprintf(outfile,"   |");
   for(size_t file=1; file<=8; file++)
   {
-    printf(" %c |",(char)(file-1+'a'));
+    fprintf(outfile," %c |",(char)(file-1+'a'));
   }
-  printf("\n");
+  fprintf(outfile,"\n");
   
   // Print out the current board state
-  printf("   +---+---+---+---+---+---+---+---+   \n");
+  fprintf(outfile,"   +---+---+---+---+---+---+---+---+   \n");
   for(size_t rank=8; rank>0; rank--)
   {
     //rank labels
-    printf(" %zu |",rank);
+    fprintf(outfile," %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
       _SuperPiece *p=get_element(file,rank);
@@ -749,52 +776,52 @@ void Board::output_board()
           // Checks if the piece is black
           if(p->owner == 1)
           {
-            printf("*");
+            fprintf(outfile,"*");
           }
           else
           {
-            printf(" ");
+            fprintf(outfile," ");
           }
           // prints the piece's type
-          printf("%c ",(char)(p->type));
+          fprintf(outfile,"%c ",(char)(p->type));
       }
       else
       {
-        printf("   ");
+        fprintf(outfile,"   ");
       }
-      printf("|");
+      fprintf(outfile,"|");
     }
     //rank labels
-    printf(" %zu ",rank);
-    printf("\n   +---+---+---+---+---+---+---+---+   \n");
+    fprintf(outfile," %zu ",rank);
+    fprintf(outfile,"\n   +---+---+---+---+---+---+---+---+   \n");
   }
   
   //file labels
-  printf("   |");
+  fprintf(outfile,"   |");
   for(size_t file=1; file<=8; file++)
   {
-    printf(" %c |",(char)(file-1+'a'));
+    fprintf(outfile," %c |",(char)(file-1+'a'));
   }
-  printf("\n");
+  fprintf(outfile,"\n");
 }
 
 //output the board in reverse so that a player playing as black can see it easily
-void Board::output_reverse_board()
+void Board::output_reverse_board(FILE *outfile)
 {
   //file labels
-  printf("   |");
+  fprintf(outfile,"   |");
   for(size_t file=1; file<=8; file++)
   {
-    printf(" %c |",(char)(file-1+'a'));
+    fprintf(outfile," %c |",(char)(file-1+'a'));
   }
-  printf("\n");
+  fprintf(outfile,"\n");
   
   // Print out the current board state
-  printf("   +---+---+---+---+---+---+---+---+\n");
+  fprintf(outfile,"   +---+---+---+---+---+---+---+---+\n");
   for(size_t rank=1; rank<=8; rank++)
   {
     //rank labels
-    printf(" %zu |",rank);
+    fprintf(outfile," %zu |",rank);
     for(size_t file=1; file<=8; file++)
     {
       _SuperPiece *p=get_element(file,rank);
@@ -804,33 +831,33 @@ void Board::output_reverse_board()
           // Checks if the piece is black
           if(p->owner == 1)
           {
-            printf("*");
+            fprintf(outfile,"*");
           }
           else
           {
-            printf(" ");
+            fprintf(outfile," ");
           }
           // prints the piece's type
-          printf("%c ",(char)(p->type));
+          fprintf(outfile,"%c ",(char)(p->type));
       }
       else
       {
-        printf("   ");
+        fprintf(outfile,"   ");
       }
-      printf("|");
+      fprintf(outfile,"|");
     }
     //rank labels
-    printf(" %zu ",rank);
-    printf("\n   +---+---+---+---+---+---+---+---+\n");
+    fprintf(outfile," %zu ",rank);
+    fprintf(outfile,"\n   +---+---+---+---+---+---+---+---+\n");
   }
   
   //file labels
-  printf("   |");
+  fprintf(outfile,"   |");
   for(size_t file=1; file<=8; file++)
   {
-    printf(" %c |",(char)(file-1+'a'));
+    fprintf(outfile," %c |",(char)(file-1+'a'));
   }
-  printf("\n");
+  fprintf(outfile,"\n");
 }
 
 //finds the king

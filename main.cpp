@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
   {
     if(at_play_player==WHITE)
     {
-      board->output_board();
+      board->output_board(stdout);
       
       if(board->get_last_move_made()!=NULL)
       {
@@ -115,8 +115,7 @@ int main(int argc, char *argv[])
     {
       
       //output in reverse for the black player, since that's how they will see the board
-//      board->output_board();
-      board->output_reverse_board();
+      board->output_reverse_board(stdout);
       
       if(board->get_last_move_made()!=NULL)
       {
@@ -154,7 +153,7 @@ int main(int argc, char *argv[])
     //switch which player is at play
     at_play_player=(at_play_player==BLACK?WHITE:BLACK);
   }
-  board->output_board();
+  board->output_board(stdout);
   printf("Game over, winner was %s\n",(winner==WHITE)? "White" : (winner==BLACK)? "Black" : "<stalemate>");
   
   delete board;

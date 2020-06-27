@@ -329,7 +329,7 @@ void AI::init()
 }
 
 //add "load" and "save" commands to load from and save to a board state file
-bool AI::handle_load_save(const char *input_buffer, Board *board)
+bool AI::handle_load_save(const char *input_buffer, Board *board, int player_id)
 {
   //if there is no space
   const char *space_content=strstr(input_buffer," ");
@@ -353,28 +353,39 @@ bool AI::handle_load_save(const char *input_buffer, Board *board)
   if((!strcmp(cmd_buf,"load")) || (!strcmp(cmd_buf,"l")))
   {
     //NOTE: start_player_id is IGNORED because there is already an at-play player in this case
-    int start_player_id=WHITE;
+    int start_player_id=player_id;
     
     board->load_from_file(arg_buf, &start_player_id);
     
     if(start_player_id==WHITE)
     {
-      board->output_board();
+      board->output_board(stdout);
     }
     else
     {
-      board->output_reverse_board();
+      board->output_reverse_board(stdout);
     }
     return true;
   }
   //save to a file
   else if((!strcmp(cmd_buf,"save")) || (!strcmp(cmd_buf,"s")))
   {
-    //TODO: write save functionality using board save method (yet to be written)
-    board->output_board(); //debug
-    printf("\n\n");
-    board->output_reverse_board(); //debug
-    printf("\n\n");
+    //save functionality using board save_to_file method
+    FILE *fp=fopen(arg_buf,"w");
+    board->save_to_file(fp,player_id);
+    fclose(fp);
+    
+#ifdef DEBUG
+    board->save_to_file(stdout,player_id);
+#endif
+    if(player_id==WHITE)
+    {
+      board->output_board(stdout);
+    }
+    else
+    {
+      board->output_reverse_board(stdout);
+    }
     
     return true;
   }
@@ -385,13 +396,22 @@ bool AI::handle_load_save(const char *input_buffer, Board *board)
 void AI::user_input(char *input_buffer)
 {
   //NOTE: fgets is documented to always null-terminate
-  fgets(input_buffer,BUFFER_SIZE,stdin);
+  char *fgets_result=fgets(input_buffer,BUFFER_SIZE,stdin);
+  
+  if(fgets_result==NULL)
+  {
+    fprintf(stderr,"Err: Couldn't read input, EOF reached\n");
+    exit(1);
+  }
   
   //trim trailing newline
-  int last_ch_idx=strlen(input_buffer)-1;
-  if(last_ch_idx>=0 && input_buffer[last_ch_idx]=='\n')
+  if(strlen(input_buffer)>0)
   {
-    input_buffer[last_ch_idx]='\0';
+    int last_ch_idx=strlen(input_buffer)-1;
+    if(input_buffer[last_ch_idx]=='\n')
+    {
+      input_buffer[last_ch_idx]='\0';
+    }
   }
 }
 
@@ -433,7 +453,7 @@ _Move *AI::user_move(Board *board, int player_id)
     }
     
     //add "load" and "save" commands to load from and save to a board state file
-    if(handle_load_save(input_buffer,board))
+    if(handle_load_save(input_buffer,board,player_id))
     {
       continue;
     }
@@ -590,7 +610,7 @@ _Move *AI::ai_move(Board *board, int player_id, double time_remaining, double en
 bool AI::run(Board *board, int player_id)
 {
   // Print out the current board state
-//  board->output_board();
+//  board->output_board(stdout);
   
   //this is a "sliding window" for history table algorithms
   //it doesn't really slide so much as step, but it's still better behavior than never adjusting for early to late game

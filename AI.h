@@ -88,7 +88,7 @@ public:
   //access remembered moves
   vector <_Move*> get_moves() { return moves; }
   
-  bool handle_load_save(const char *input_buffer, Board *board);
+  bool handle_load_save(const char *input_buffer, Board *board, int player_id);
   void user_input(char *input_buffer);
   _Move *user_move(Board *board, int player_id);
   
