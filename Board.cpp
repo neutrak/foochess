@@ -366,7 +366,7 @@ void Board::load_board_save_line(const char *line)
           }
           
 #ifdef DEBUG
-          printf("%s at %c%i\n",entry_buf,chess_file,chess_rank);
+          printf("Dbg: %s at %c%i\n",entry_buf,chess_file,chess_rank);
 #endif
           
           unsigned int piece_color=WHITE;
