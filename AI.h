@@ -88,6 +88,8 @@ public:
   //access remembered moves
   vector <_Move*> get_moves() { return moves; }
   
+  bool handle_load_save(const char *input_buffer, Board *board);
+  void user_input(char *input_buffer);
   _Move *user_move(Board *board, int player_id);
   
   //make a move depending on the algorithm in use and the time left

@@ -27,10 +27,9 @@ int main(int argc, char *argv[])
       exit(0);
     }
     
-    //TODO: add an argument to allow a user to import a board state into the starting point of a game
+    //add an argument to allow a user to import a board state into the starting point of a game
     //via a board state text file (.bst)
     //thus providing a sort of crude save/load functionality
-    
     if(!strcmp(argv[arg_idx],"--load"))
     {
       arg_idx++;

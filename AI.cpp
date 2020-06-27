@@ -178,15 +178,12 @@ void AI::configure(int player_id)
   while(!selection_done)
   {
     printf("Current algorithm is %s; change (Yes, No)? ",(algo==USER)? "USER" : (algo==RANDOM)? "RANDOM" : "TREE_SEARCH");
-    scanf("%s",input_buffer);
-    //always null-terminate
-    input_buffer[BUFFER_SIZE-1]='\0';
+    user_input(input_buffer);
     
     if(tolower(input_buffer[0])=='y')
     {
       printf("New selection (USER, RANDOM, TREE_SEARCH): ");
-      scanf("%s",input_buffer);
-      input_buffer[BUFFER_SIZE-1]='\0';
+      user_input(input_buffer);
       
       //make this input case-insensitive
       for(unsigned int n=0; n<strlen(input_buffer); n++)
@@ -226,8 +223,7 @@ void AI::configure(int player_id)
       //get some input!
       char input_buffer[BUFFER_SIZE];
       bzero(input_buffer,BUFFER_SIZE);
-      scanf("%s",input_buffer);
-      input_buffer[BUFFER_SIZE-1]='\0';
+      user_input(input_buffer);
       
       if((!strncmp(input_buffer,"done",BUFFER_SIZE)) || (!strncmp(input_buffer,"d",BUFFER_SIZE)))
       {
@@ -332,22 +328,101 @@ void AI::init()
   algo=TREE_SEARCH;
 }
 
+//add "load" and "save" commands to load from and save to a board state file
+bool AI::handle_load_save(const char *input_buffer, Board *board)
+{
+  //if there is no space
+  const char *space_content=strstr(input_buffer," ");
+  if(space_content==NULL)
+  {
+    //then skip it; it's not our problem
+    return false;
+  }
+  
+  int space_idx=space_content-input_buffer;
+  
+  char cmd_buf[BUFFER_SIZE];
+  strncpy(cmd_buf,input_buffer,space_idx);
+  cmd_buf[space_idx]='\0';
+  
+  char arg_buf[BUFFER_SIZE];
+  strncpy(arg_buf,"",BUFFER_SIZE);
+  strncpy(arg_buf,input_buffer+space_idx+1,strlen(input_buffer)-space_idx-1);
+  
+  //load a save file
+  if((!strcmp(cmd_buf,"load")) || (!strcmp(cmd_buf,"l")))
+  {
+    //NOTE: start_player_id is IGNORED because there is already an at-play player in this case
+    int start_player_id=WHITE;
+    
+    board->load_from_file(arg_buf, &start_player_id);
+    
+    if(start_player_id==WHITE)
+    {
+      board->output_board();
+    }
+    else
+    {
+      board->output_reverse_board();
+    }
+    return true;
+  }
+  //save to a file
+  else if((!strcmp(cmd_buf,"save")) || (!strcmp(cmd_buf,"s")))
+  {
+    //TODO: write save functionality using board save method (yet to be written)
+    board->output_board(); //debug
+    printf("\n\n");
+    board->output_reverse_board(); //debug
+    printf("\n\n");
+    
+    return true;
+  }
+  
+  return false;
+}
+
+void AI::user_input(char *input_buffer)
+{
+  //NOTE: fgets is documented to always null-terminate
+  fgets(input_buffer,BUFFER_SIZE,stdin);
+  
+  //trim trailing newline
+  int last_ch_idx=strlen(input_buffer)-1;
+  if(last_ch_idx>=0 && input_buffer[last_ch_idx]=='\n')
+  {
+    input_buffer[last_ch_idx]='\0';
+  }
+}
+
 _Move *AI::user_move(Board *board, int player_id)
 {
   //a buffer for the user to input something
   char input_buffer[BUFFER_SIZE];
   bzero(input_buffer,BUFFER_SIZE*sizeof(char));
   
+  bool skip_prompt=false;
   _Move *player_move=NULL;
   while(player_move==NULL)
   {
-    printf("Move Selection (expected format <from file><from rank><to file><to rank>)\n");
-    printf("for example a2a3 would move from location a,2 to location a,3 (quit or q to quit)\n");
-    //TODO: add documentation for "load" and "save" commands to load from and save to a board state file
-    printf("Enter move: ");
-    scanf("%s",input_buffer);
-    //always null-terminate
-    input_buffer[BUFFER_SIZE-1]='\0';
+    if(!skip_prompt)
+    {
+      printf("Move Selection (expected format <from file><from rank><to file><to rank>)\n");
+      printf("for example a2a3 would move from location a,2 to location a,3\n");
+      printf("quit or q to quit\n");
+      printf("save or s to save; save <filename.bst>\n");
+      printf("load or l to load; load <filename.bst>\n");
+      printf("Enter move: ");
+    }
+    skip_prompt=false;
+    
+    user_input(input_buffer);
+    
+    //ignore blank lines
+    if(strlen(input_buffer)==0){
+      skip_prompt=true;
+      continue;
+    }
     
 //    printf("AI::user_move debug 0, input_buffer=\"%s\"\n",input_buffer);
     if((!strncmp(input_buffer,"quit",BUFFER_SIZE)) || (!strncmp(input_buffer,"q",BUFFER_SIZE)))
@@ -357,7 +432,11 @@ _Move *AI::user_move(Board *board, int player_id)
       break;
     }
     
-    //TODO: add "load" and "save" commands to load from and save to a board state file
+    //add "load" and "save" commands to load from and save to a board state file
+    if(handle_load_save(input_buffer,board))
+    {
+      continue;
+    }
     
     //convert locations from characters to internal coordinate representation
     int from_file=tolower(input_buffer[0])-'a'+1;
@@ -393,8 +472,9 @@ _Move *AI::user_move(Board *board, int player_id)
             while(!valid_promotion)
             {
               printf("Pawn detected, what would you like to promote to? (Queen, Rook, kNight, Bishop): ");
-              scanf("%s",input_buffer);
-              input_buffer[BUFFER_SIZE-1]='\0';
+              
+              user_input(input_buffer);
+              
               //case-insensitive
               input_buffer[0]=tolower(input_buffer[0]);
               
